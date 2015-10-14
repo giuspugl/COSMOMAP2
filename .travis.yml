@@ -20,8 +20,9 @@ before_install:
 install:
   - conda install --yes anaconda-client
   - anaconda search -t conda random
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy linop   random nose dateutil pandas statsmodels
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy random nose dateutil pandas statsmodels
   - pip install coveralls
+  - pip install linop
   - ./setup.sh
  
 # Run test
