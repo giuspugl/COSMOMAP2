@@ -26,8 +26,9 @@ install:
  
 # Run test
 script:
-  - nosetests --with-coverage --cover-package=interfaces --cover-package=utilities tests
+   - nosetests --cover-package=interfaces --cover-package=utilities test
+#  - nosetests --with-coverage --cover-package=interfaces --cover-package=utilities tests
  
 # Calculate coverage
-after_success:
-  - coveralls --config_file .coveragerc
+#after_success:
+#  - coveralls --config_file .coveragerc
