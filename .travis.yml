@@ -26,7 +26,7 @@ install:
  
 # Run test
 script:
-   - nosetests --cover-package=interfaces --cover-package=utilities test
+   - nosetests --cover-package=interfaces --cover-package=utilities tests
 #  - nosetests --with-coverage --cover-package=interfaces --cover-package=utilities tests
  
 # Calculate coverage
