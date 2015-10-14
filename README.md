@@ -1,4 +1,4 @@
-# COSMOMAP2
+# COSmic Microwave background linear Operators MAp-making Preconditioner 2-levels
 This repository will contain a package which performs the solution of Linear System via preconditioning it in 2 steps ( see  Szyldlarski et al.2014). The whole system matrices are  implemented as  Linear Operators. 
 
 * * *

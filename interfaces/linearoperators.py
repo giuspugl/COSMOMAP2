@@ -1,9 +1,10 @@
+import math as m
 import numpy as np
 import linop.linop as lp
 import linop.blkop as blk
 import random as rd
 import scipy.sparse.linalg as spla
-from utilities_functions import *
+#from utilities_functions import *
 
 class SparseLO(lp.LinearOperator):
     """
@@ -83,11 +84,12 @@ class SparseLO(lp.LinearOperator):
         Values of the same pixel are stored in the memory contiguously.
 
         """
-        x=np.zeros(self.ncols*3)
+        x=np.zeros(self.ncols*self.pol)
+
         for (i,j) in self.pairs:
             x[j]+=v[i]
-            x[1+j]+=v[i]*np.cos(2*self.phi[i])
-            x[2+j]+=v[i]*np.sin(2*self.phi[i])
+            x[1+j]+=v[i]*m.cos(2*self.phi[i])
+            x[2+j]+=v[i]*m.sin(2*self.phi[i])
 
         return x
 
@@ -109,7 +111,7 @@ class SparseLO(lp.LinearOperator):
                                                 symmetric=False, rmatvec=self.rmult )
         else:
             raise RuntimeError("No valid polarization key set!\t=>\tpol=%d \nPossible values are pol=%d(I),%d(IQU)."%(pol,1,3))
-        print self.ncols,self.nrows
+        #print self.ncols,self.nrows
     def show(self):
         from scipy.sparse import coo_matrix
         i=[c[0] for c in self.pairs]

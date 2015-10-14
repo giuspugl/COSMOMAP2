@@ -18,7 +18,7 @@ before_install:
   - sudo ln -s /run/shm /dev/shm
 # Install packages
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib nose dateutil pandas statsmodels
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas random numpy scipy linop  nose dateutil pandas statsmodels
   - pip install coveralls
   - ./setup.sh
  

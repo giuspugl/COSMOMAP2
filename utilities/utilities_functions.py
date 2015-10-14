@@ -42,20 +42,24 @@ def pairs_gen(nrows,ncols,pol=1):
 
 def checking_output(info):
     if info==0:
-        print '+++++++++++++++++++++++++'
-        print "| successful convergence |"
-        print '+++++++++++++++++++++++++'
+        return True
+    #    print '+++++++++++++++++++++++++'
+    #    print "| successful convergence |"
+    #    print '+++++++++++++++++++++++++'
 
-    elif info<0:
-        print '+++++++++++++++++++++++++'
-        print '| illegal input or breakdown |'
-        print '+++++++++++++++++++++++++'
-
-    else:
-        print '++++++++++++++++++++++++++++++++++++++'
-        print '| convergence to tolerance not achieved after  |'
-        print '| ', info,' iterations |'
-        print '++++++++++++++++++++++++++++++++++++++'
+    if info<0:
+        raise RuntimeError("illegal input or breakdown during the execution")
+        return False
+    #    print '+++++++++++++++++++++++++'
+    #    print '| illegal input or breakdown |'
+    #    print '+++++++++++++++++++++++++'
+    elif info >0 :
+        raise RuntimeError("convergence not achieved after %d iterations")%info
+        return False
+    #    print '++++++++++++++++++++++++++++++++++++++'
+    #    print '| convergence to tolerance not achieved after  |'
+    #    print '| ', info,' iterations |'
+    #    print '++++++++++++++++++++++++++++++++++++++'
 
 
 
