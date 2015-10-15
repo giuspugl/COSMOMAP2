@@ -93,3 +93,29 @@ def noise_val(nb,bandwidth=1):
         t.append( np.random.random(size=bandwidth) )
     diag=[i[0] for i in t]
     return  t, diag
+
+
+def system_setup(nt,npix,nb,pol=1):
+    """
+    Setup the linear system
+    **Returns**
+    - d :{array}
+        a ``nt`` array of random numbers;
+    - pairs: {list of tuples}
+        the (i,j) non-null indices of the pointing matrix;
+    - phi :{array}
+        angles if ``pol=3``
+    - t,diag :  {outputs of ``noise_val``}
+        noise values to construct the noise covariance matrix
+    - x : {array}
+        the initial solution .
+    """
+    d=np.random.random(nt)
+    pairs=pairs_gen(nt,npix,pol)
+    phi=None
+    if pol==3:
+        phi=angles_gen(rd.uniform(0,np.pi),nt)
+    bandsize=2
+    t, diag=noise_val(nb,bandsize)
+    x=np.zeros(pol*npix)
+    return d,pairs,phi,t,diag,x

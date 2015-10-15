@@ -1,6 +1,19 @@
-from scipy.linalg import get_blas_funcs,lu,solve
+from scipy.linalg import get_blas_funcs,lu,solve,blas
 import numpy as np
-
+def dgemm(A,B):
+    """
+    Compute Matrix-Matrix multiplication from the BLAS routine DGEMM
+    """
+    #print len(A),len(B)
+    if type(A)==list :
+        A=np.asarray(A,order='F')
+    if type(B)==list:
+        B=np.asarray(B,order='F')
+    #print A.T.shape,B.shape
+    #import scipy.linalg.blas as bf
+    matdot=get_blas_funcs('gemm',dtype=A.dtype)
+    #return bf.dgemm(alpha=1.0, a=A.T, b=B, trans_b=True)
+    return matdot(alpha=1.0, a=A.T, b=B, trans_b=True,trans_a=False)
 
 def norm2(q):
     """
@@ -170,18 +183,19 @@ def build_Z(z,y,w,eps):
     for i in xrange(m):
         if abs(z[i].real)<=eps:
             select_eigvec.append( y[i] )
-
     r=len(select_eigvec)
     if r==0 :
         raise RuntimeError("No Ritz eigenvalue are found smaller than fixed threshold %.1g "%eps)
     print "++++++++++++++++++++++++++++++++++++"
     print "Found  eigenvectors below the threshold %.1g!\nThe deflation subspace  has dim(Z)=%d "%(eps,r)
     print "++++++++++++++++++++++++++++++++++++"
-    Z=[]
+    #s=np.asarray(select_eigvec,order='F')
+    Z=dgemm(w,select_eigvec)
+    """
     for  s in select_eigvec:
         summ=np.zeros(npix)
         for i in xrange(m):
             summ+=w[i]*s[i]
         Z.append(summ)
-
+    """
     return Z,r
