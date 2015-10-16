@@ -1,28 +1,6 @@
-from scipy.linalg import get_blas_funcs,lu,solve,blas
+from scipy.linalg import get_blas_funcs
 import numpy as np
-def dgemm(A,B):
-    """
-    Compute Matrix-Matrix multiplication from the BLAS routine DGEMM
-    """
-    #print len(A),len(B)
-    if type(A)==list :
-        A=np.asarray(A,order='F')
-    if type(B)==list:
-        B=np.asarray(B,order='F')
-    #print A.T.shape,B.shape
-    #import scipy.linalg.blas as bf
-    matdot=get_blas_funcs('gemm',dtype=A.dtype)
-    #return bf.dgemm(alpha=1.0, a=A.T, b=B, trans_b=True)
-    return matdot(alpha=1.0, a=A.T, b=B, trans_b=True,trans_a=False)
-
-def norm2(q):
-    """
-    Compute the euclidean norm of an array ``q`` by calling the BLAS routine
-    """
-    q = np.asarray(q)
-    nrm2 = get_blas_funcs('nrm2', dtype=q.dtype)
-    return nrm2(q)
-
+from utilities.linear_algebra_funcs import *
 
 
 def arnoldi(A, b, x0=None, tol=1e-5, maxiter=1000, inner_m=30 ):

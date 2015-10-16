@@ -1,6 +1,9 @@
+import numpy as np
 from interfaces import *
 from utilities import *
-import numpy as np
+from utilities.IOfiles import read_from_hdf5
+#from utilities.linear_algebra_funcs import *
+#from utilities.utilities_functions import *
 
 def test_block_diagonal_preconditioner():
     """
@@ -68,31 +71,35 @@ def test_block_diagonal_preconditioner_pol():
 
 def test_block_diag_precond_action():
     """
-    Build the block diagonal preconditioner and check
-    its action when applied onto a vector
+    check the action of the block diag preconditioner
+    when applied onto a vector.
+    The input come from an hdf5 file in data/ directory.
 
     """
-    for nt in np.arange(10,11,20):
-        for npix in np.arange(5,nt,10):
-            x0=np.random.random(npix)
-            pairs=pairs_gen(nt,npix)
-            #construct the block diagonal operator
-            nb=2
-            t,diag=noise_val(nb)
-            blocksize=nt/nb
-            N=BlockLO(blocksize,diag,offdiag=False)
-            P=SparseLO(npix,nt,pairs)
-            A=P.T*N*P
-            b=A*x0
-            print b
+    # input  from file, nt and np fixed
+    nt=100
+    npix=15
+    nb=2
 
-            M_bd=InverseLO(A,method=spla.cg)
-            vec=M_bd*b
-            #vec,info=spla.cg(A,b, M=M_bd)
+    pol=3
 
-            #assert checking_output(M_bd.converged)
-            print vec,x0
-            assert  np.allclose(vec,x0)
+    pairs,phi,t,diag,d=read_from_hdf5('data/testcase_block_diag_3.hdf5')
+
+    #construct the block diagonal operator
+    x0=np.ones(pol*npix)
+    blocksize=nt/nb
+    N=BlockLO(blocksize,diag,offdiag=False)
+    P=SparseLO(npix,nt,pairs,phi,pol=pol)
+
+    A=P.T*N*P
+    b=A*x0
+    M_bd=InverseLO(A,method=spla.cg)
+    vec=M_bd*b
+    assert checking_output(M_bd.converged)
+
+
+    print vec,x0
+    assert  np.allclose(vec,x0,atol=1.e-4)
 
 
 

@@ -3,10 +3,6 @@ import numpy as np
 from scipy.linalg import get_blas_funcs
 import math as m
 
-def scalprod(a,b):
-    dot=get_blas_funcs('dot', (a,b))
-    return dot(a,b)
-
 
 def angles_gen(theta0,n,sample_freq=200. ,whwp_freq=2.5):
     """
