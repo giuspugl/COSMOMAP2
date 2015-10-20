@@ -1,10 +1,22 @@
 import numpy as np
 import h5py as h5
 
-def read_from_hdf5(filename):
+
+
+def read_from_data(filename,pol):
     f=h5.File(filename,"r")
+    pixs = f['bolo_pair_0/pixel'][...]
+    polang=f['bolo_pair_0/pol_angle'][...]
+    if pol== 1:
+        d=f['bolo_pair_0/sum'][...]
+        weight=f['bolo_pair_0/weight_sum'][...]
+    elif pol==3:
+        d=f['bolo_pair_0/dif'][...]
+        weight=f['bolo_pair_0/weight_dif'][...]
+        polang+=np.pi/2.
+
     f.close()
-    return
+    return d,weight,polang,pixs
 
 
 def write_to_hdf5(filename,pairs,noise_values,d,phi=None):
@@ -28,11 +40,11 @@ def write_to_hdf5(filename,pairs,noise_values,d,phi=None):
 def read_from_hdf5(filename):
     f=h5.File(filename,"r")
 
-    obs_pix=f['/bolo_pair/pixel'][:]
-    polang=f['/bolo_pair/pol_angle'][:]
-    weight=[i for i in f['/bolo_pair/weight'][:]]
+    obs_pix=f['/bolo_pair/pixel'][...]
+    polang=f['/bolo_pair/pol_angle'][...]
+    weight=[i for i in f['/bolo_pair/weight'][...]]
     diag=[i[0] for i in weight]
-    det=f['bolo_pair/sum'][:]
+    det=f['bolo_pair/sum'][...]
     f.close()
 
     nt=len(obs_pix)

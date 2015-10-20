@@ -72,17 +72,18 @@ def test_block_diagonal_preconditioner_pol():
 def test_block_diag_precond_action():
     """
     check the action of the block diag preconditioner
-    when applied onto a vector.
+
+    Given an initial guess vector ``x0`` we compute ``b= A x0``,
+    then
+
+    ``x1= CG(A, b, Precond=M_bd).``
+    we check whether ``x0 = x1``.
+
     The input come from an hdf5 file in data/ directory.
 
     """
     # input  from file, nt and np fixed
-    nt=100
-    npix=15
-    nb=2
-
-    pol=3
-
+    nt,npix,nb,pol=100,15,2,3
     pairs,phi,t,diag,d=read_from_hdf5('data/testcase_block_diag_3.hdf5')
 
     #construct the block diagonal operator
@@ -96,8 +97,6 @@ def test_block_diag_precond_action():
     M_bd=InverseLO(A,method=spla.cg)
     vec=M_bd*b
     assert checking_output(M_bd.converged)
-
-
     print vec,x0
     assert  np.allclose(vec,x0,atol=1.e-4)
 

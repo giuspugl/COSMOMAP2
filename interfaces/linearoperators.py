@@ -4,7 +4,7 @@ import linop.linop as lp
 import linop.blkop as blk
 import random as rd
 import scipy.sparse.linalg as spla
-#from utilities_functions import *
+from utilities import *
 
 class SparseLO(lp.LinearOperator):
     """
@@ -330,9 +330,9 @@ class CoarseLO(lp.LinearOperator):
 
     **Parameters**
 
-    - ``Z`` : {list of arrays}
+    - ``Z`` : {np.matrix}
             deflation matrix;
-    - ``AZ`` : {list of arrays}
+    - ``A`` : {list of arrays}
             contains vectors ``A*Z_i``;
     - ``r`` :  {int}
             ``rank(Z)``, dimension of the deflation subspace.
@@ -342,20 +342,33 @@ class CoarseLO(lp.LinearOperator):
         """
         Perform the multiplication of the inverse coarse operator ``x=E^{-1} v``.
         It exploits the LU decomposition of ``E`` to solve the system ``Ex=v``.
+        It first solves ``y=L^{-1} v`` and then ``x=U^{-1}y``.
         """
         y=solve(self.L,v,lower=True,overwrite_b=False )
         x=solve(self.U,y,overwrite_b=True)
         return x
 
-    def __init__(self,Z,AZ,r):
+    def set_operator(self,Z,Az,r):
+        M=dgemm(Z,Az.T)
+        self.L,self.U=lu(M,permute_l=True,overwrite_a=True,check_finite=False)
+
+
+
+    def __init__(self,Z,A,r):
+        Az=Z*0.
+        for i in xrange(r):
+            Az[:,i]=A*Z[:,i]
+        self.set_operator(Z,Az,r)
         super(CoarseLO,self).__init__(nargin=r,nargout=r,matvec=self.mult,
                                             symmetric=True)
-        M=[]
+
+        """M=[]
         #dot=get_blas_funcs('dot', (Z[0], AZ[0]))
         for j in AZ:
-            M.append([scalprod(i,j) for i in Z])
+            M.append([scalprod(Z[:,i],j) for i in xrange(r)])
         M=np.matrix(M)
-        self.L,self.U=lu(M,permute_l=True,overwrite_a=True,check_finite=False)
+        """
+
 
 
 class DeflationLO(lp.LinearOperator):
@@ -379,19 +392,28 @@ class DeflationLO(lp.LinearOperator):
         y=np.zeros(self.nrows)
         for i in xrange(self.ncols):
             y+=self.z[i]*x[i]
-        return y
 
+        #return self.z*x
+        return y
     def rmult(self,x):
         """
         Performs the product onto a ``N_pix`` vector with ``Z^T``.
 
         """
         return np.array( [scalprod(i,x) for i in self.z] )
-
+        #return self.z.T*x
     def __init__(self, z):
-        self.ncols=len(z)
-        self.nrows=len(z[0])
-        self.z=z
+        self.z=[]
+        self.nrows,self.ncols=z.shape
+
+        for j in xrange(self.ncols):
+            self.z.append(z[:,j])
+
+        #self.ncols=len(z)
+        #print self.z
+        #print self.nrows, self.ncols
+        #self.z=z
+        #print self.z.shape,self.z.T.shape
         super(DeflationLO,self).__init__(nargin=self.ncols, nargout=self.nrows,
                                                 matvec=self.mult, symmetric=False,
                                                 rmatvec=self.rmult)

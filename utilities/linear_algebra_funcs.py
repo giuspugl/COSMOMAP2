@@ -5,13 +5,12 @@ def dgemm(A,B):
     """
     Compute Matrix-Matrix multiplication from the BLAS routine DGEMM
     """
-    #print len(A),len(B)
     if type(A)==list :
         A=np.asarray(A,order='F')
     if type(B)==list:
         B=np.asarray(B,order='F')
 
-    matdot=get_blas_funcs('gemm',dtype=A.dtype)
+    matdot=get_blas_funcs('gemm', (A,B))
 
     return matdot(alpha=1.0, a=A.T, b=B, trans_b=True,trans_a=False)
 

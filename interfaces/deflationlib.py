@@ -1,7 +1,6 @@
 from scipy.linalg import get_blas_funcs
 import numpy as np
-from utilities.linear_algebra_funcs import *
-
+from utilities import *
 
 def arnoldi(A, b, x0=None, tol=1e-5, maxiter=1000, inner_m=30 ):
     """
@@ -169,11 +168,14 @@ def build_Z(z,y,w,eps):
     print "++++++++++++++++++++++++++++++++++++"
     #s=np.asarray(select_eigvec,order='F')
     Z=dgemm(w,select_eigvec)
+
     """
+    Z1=[]
     for  s in select_eigvec:
         summ=np.zeros(npix)
         for i in xrange(m):
             summ+=w[i]*s[i]
-        Z.append(summ)
+        Z1.append(summ)
+    print Z1,"\n",Z
     """
     return Z,r
