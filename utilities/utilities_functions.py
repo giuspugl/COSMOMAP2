@@ -4,6 +4,29 @@ from scipy.linalg import get_blas_funcs
 import math as m
 
 
+
+def profile_run():
+    import cProfile
+    pr=cProfile.Profile()
+    return pr
+
+def output_profile(pr):
+    import pstats,StringIO
+    s = StringIO.StringIO()
+    sortby = 'cumulative'
+    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    ps.print_stats()
+    print s.getvalue()
+
+
+def rescalepixels(pixs):
+    minpix=min(pixs)
+    maxpix=max(pixs)
+
+    obspix=pixs - minpix
+    return minpix,obspix,maxpix
+
+
 def angles_gen(theta0,n,sample_freq=200. ,whwp_freq=2.5):
     """
     Generate  polarization angle given the sample frequency of the instrument,
@@ -12,29 +35,48 @@ def angles_gen(theta0,n,sample_freq=200. ,whwp_freq=2.5):
 
     """
     #print theta0,sample_freq,whwp_freq,n
-    return [theta0+ 2*np.pi*whwp_freq/sample_freq*i for i in xrange(n)]
+    return np.array([theta0+ 2*np.pi*whwp_freq/sample_freq*i for i in xrange(n)])
+
+def count(ck):
+    """
+    iteration counter
+    """
+    ck+=1
+    #print ck
+
 
 def pairs_gen(nrows,ncols,pol=1):
     """
-    Generate pairs (i,j) to fill the pointing matrix
+    Generate random ``int``s  to fill the pointing matrix for observed pixels.
     Implemented even for polarization runs.
     """
     if ncols<3:
         raise RuntimeError("Not enough pixels!\n Please set Npix >=3, you have set Npix=%d"%ncols)
 
-    pairs=[]
-    if pol==1:
-        for i in xrange(nrows):
-            pairs.append((i,rd.randint(0 ,ncols-1)))
-        return pairs
+    #pairs=[]
+    #if pol==1:
+        #for i in xrange(nrows):
+            #pairs.append((i,rd.randint(0 ,ncols-1)))
+            #pairs.append(rd.randint(0 ,ncols-1))
+    js=np.random.randint(0,high=ncols,size=nrows)
+
+    return js
+    """
     elif pol==3:
+
         max_multi =3* m.floor(float(ncols) / 3)
-        for i in xrange(nrows):
-            j=3*rd.randint(0 ,max_multi-1)
-            pairs.append((i,j))
 
-        return pairs
-
+        #for i in xrange(nrows):
+        #    j=3*rd.randint(0 ,max_multi-1)
+            #pairs.append((i,j))
+        #    pairs.append(j)
+        js=np.random.randint(0,high= max_multi-1,size=nrows)
+        #print max_multi,js
+        print js
+        #js*=3.
+        #return pairs
+        return js
+    """
 
 def checking_output(info):
     if info==0:
@@ -50,7 +92,7 @@ def checking_output(info):
     #    print '| illegal input or breakdown |'
     #    print '+++++++++++++++++++++++++'
     elif info >0 :
-        raise RuntimeError("convergence not achieved after %d iterations")%info
+        raise RuntimeError("convergence not achieved after %d iterations"%info)
         return False
     #    print '++++++++++++++++++++++++++++++++++++++'
     #    print '| convergence to tolerance not achieved after  |'
@@ -61,27 +103,25 @@ def checking_output(info):
 
 def noise_val(nb,bandwidth=1):
     """
-        Generate  elements to fill the  noise covariance
-        matrix with a  random ditribution ``N_tt'=<n_t n_t'>``.
+    Generate  elements to fill the  noise covariance
+    matrix with a  random ditribution ``N_tt'=<n_t n_t'>``.
 
-        Parameters
-        ----------
+    **Parameters**
+    - ``nb`` : {int}
+        number of noise stationary intervals,
+        i.e. number  of blocks in N_tt'.
+    - ``bandwidth`` : {int}
+        the width of the diagonal band.
+        e.g. :
+        -   ``bandwidth=1`` define the first up and low diagonal terms.
+        -   ``bandwidth=2`` 2 off diagonal terms.
 
-        ``nb`` : {int}
-            number of noise stationary intervals,
-            i.e. number  of blocks in N_tt'.
-        ``bandwidth`` : {int}
-            the width of the diagonal band.
-            e.g. :
-            -   ``bandwidth=1`` define the first up and low diagonal terms.
-            -   ``bandwidth=2`` 2 off diagonal terms.
+    **Returns**
 
-        Returns
-        -------
-        ``t``: {list of arrays }
-            ``shape=[nb,bandwidth]``
-        ``diag`` : {list }, ``size = nb``
-                diagonal values of each block .
+    - ``t``: {list of arrays }
+        ``shape=(nb,bandwidth)``
+    - ``diag`` : {list }, ``size = nb``
+        diagonal values of each block .
     """
     diag=[]
     t=[]
@@ -94,6 +134,7 @@ def noise_val(nb,bandwidth=1):
 def system_setup(nt,npix,nb,pol=1):
     """
     Setup the linear system
+
     **Returns**
     - d :{array}
         a ``nt`` array of random numbers;

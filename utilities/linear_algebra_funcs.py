@@ -4,6 +4,8 @@ import numpy as np
 def dgemm(A,B):
     """
     Compute Matrix-Matrix multiplication from the BLAS routine DGEMM
+    If ``A ,B``  are ordered as lists it convert them
+    as matrices via the `` numpy.asarray`` function.
     """
     if type(A)==list :
         A=np.asarray(A,order='F')
@@ -23,5 +25,8 @@ def norm2(q):
     return nrm2(q)
 
 def scalprod(a,b):
+    """
+    Scalar product of two vectors ``a`` and ``b``. 
+    """
     dot=get_blas_funcs('dot', (a,b))
     return dot(a,b)

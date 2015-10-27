@@ -105,7 +105,7 @@ def test_deflation_operator_pol():
             y= Zd*v
             #print y2,y
 
-            x=np.ones(npix)
+            x=np.ones(pol*npix)
             s2=Z.T.dot(x)
             s=Zd.T*x
             #print s2,s

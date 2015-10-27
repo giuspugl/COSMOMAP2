@@ -22,8 +22,8 @@ class SparseLO(lp.LinearOperator):
         number of columns;
     - ``m`` : {int}
         number of rows;
-    - ``pairs`` : {list of tuples, 2-d array }
-         ``(i,j)`` positions of the non-null elements of  the matrix, ``A_(i,j)``;
+    - ``pairs`` : { array }
+         pixels id, ``j`` of the non-null elements of  the matrix, ``A_(i,j)``;
     - ``pol`` : {int}
         process an intensity only map (``[default] pol=1``), intensity/polarization
         map (``pol=3``);
@@ -35,13 +35,15 @@ class SparseLO(lp.LinearOperator):
     def mult(self,v):
         """
         Performs the product of a sparse matrix ``A*v``,\
-         with ``v`` a  ``numpy`` dense vector.
+         with ``v`` a  ``numpy npix``  dense vector.
 
         It extracts the components of ``v`` corresponding  to the non-null \
         elements of the operator.
+
         """
         x=np.zeros(self.nrows)
-        for (i,j) in self.pairs:
+
+        for i,j in np.ndenumerate(self.pairs):
             x[i]+=v[j]
 
         return x
@@ -49,9 +51,10 @@ class SparseLO(lp.LinearOperator):
     def rmult(self,v):
         """
         Performs the product for the transpose operator ``A^T``.
+
         """
         x=np.zeros(self.ncols)
-        for (i,j) in self.pairs:
+        for i,j in np.ndenumerate(self.pairs):
             x[j]+=v[i]
 
         return x
@@ -71,27 +74,62 @@ class SparseLO(lp.LinearOperator):
 
         """
         x=np.zeros(self.nrows)
-        for (i,j) in self.pairs:
-            x[i]+=v[j]+v[j+1]*np.cos(2*self.phi[i])+v[j+2]*np.sin(2*self.phi[i])
+        for i,j in np.ndenumerate(self.pairs):
+
+            x[i]+=v[3*j]+v[3*j+1]*self.cos[i]+v[3*j+2]*self.sin[i]
 
         return x
 
     def rmult_iqu(self,v):
         """
-        Performs the product for the transpose operator ``A^T`` to get a IQU-map
-        like vector.
+        Performs the product for the transpose operator ``A^T`` to get a IQU map-like vector.
         Since this vector resembles the pixel of 3 maps it has 3 times the size ``Npix``.
         Values of the same pixel are stored in the memory contiguously.
 
         """
         x=np.zeros(self.ncols*self.pol)
 
-        for (i,j) in self.pairs:
-            x[j]+=v[i]
-            x[1+j]+=v[i]*m.cos(2*self.phi[i])
-            x[2+j]+=v[i]*m.sin(2*self.phi[i])
+        for i,j in np.ndenumerate(self.pairs):
+            x[3*j]+=v[i]
+
+            x[1+3*j]+=v[i]*self.cos[i]
+            x[2+3*j]+=v[i]*self.sin[i]
 
         return x
+    def initializeweights(self,phi):
+
+        self.counts=np.zeros(self.ncols)
+        for i,j in np.ndenumerate(self.pairs):
+            self.counts[j]+=1.
+
+        self.mask=np.where(self.counts !=0)[0]
+
+        if self.pol==3:
+            self.cos=np.cos(2*phi)
+            self.sin=np.sin(2*phi)
+            self.cos2=np.zeros(self.ncols)
+            self.sin2=np.zeros(self.ncols)
+            self.sincos=np.zeros(self.ncols)
+            for i,j in np.ndenumerate(self.pairs):
+                self.cos2[j]+=self.cos[i]*self.cos[i]
+                self.sin2[j]+=self.sin[i]*self.sin[i]
+                self.sincos[j]+=self.cos[i]*self.sin[i]
+
+            det=(self.cos2*self.sin2)-(self.sincos*self.sincos)
+
+            tr=self.cos2+self.sin2
+
+            sqrt=np.sqrt(tr*tr/4. -det)
+            lambda_max=tr/2. + sqrt
+            lambda_min=tr/2. - sqrt
+
+            cond_num=np.abs(lambda_max/lambda_min)
+            mask=np.where(cond_num<=1.e3)[0]
+
+            self.cos2[mask]/=det[mask]
+            self.sin2[mask]/=det[mask]
+            self.sincos[mask]/=det[mask]
+            self.mask=mask
 
 
     def __init__(self,n,m,pairs,phi=None,pol=1):
@@ -99,10 +137,9 @@ class SparseLO(lp.LinearOperator):
         self.pol=pol
         self.nrows=m
         self.pairs=pairs
-
+        self.initializeweights(phi)
         if pol==3:
             self.__polarization='IQU'
-            self.phi=phi
             super(SparseLO, self).__init__(nargin=pol*n,nargout=m, matvec=self.mult_iqu,
                                                 symmetric=False, rmatvec=self.rmult_iqu )
         elif pol==1:
@@ -233,6 +270,37 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
         return self.__isoffdiag
 
 
+class BlockPrec(lp.LinearOperator):
+    def mult(self,x):
+        y=x*0.
+        if self.pol==1:
+            y[self.mask]=x[self.mask]/self.counts[self.mask]
+        elif self.pol==3:
+            m=len(self.mask)
+            for j in xrange(m):
+                i=self.mask[j]
+                y[3*i]=x[3*i]/self.counts[i]
+                qtmp=self.sin2[i]*x[i*3+1]-self.sincos[i]*x[i*3+2]
+                utmp=self.cos2[i]*x[i*3+2]-self.sincos[i]*x[i*3+1]
+                y[i*3+1],y[i*3+2]=qtmp,utmp
+
+        return y
+
+    def __init__(self,counts,mask,n,pol=1,sin2=None,cos2=None,sincos=None):
+        self.counts=counts
+        self.size=pol*n
+        self.mask=mask
+        self.pol=pol
+        if pol==3:
+            self.sin2=sin2
+            self.cos2=cos2
+            self.sincos=sincos
+
+        super(BlockPrec,self).__init__(nargin=self.size,nargout=self.size, matvec=self.mult,
+                                                symmetric=True)
+
+
+
 class InverseLO(lp.LinearOperator):
     """
     Construct the inverse operator of ``A``, ``A^-1`` as a linear operator.
@@ -250,11 +318,11 @@ class InverseLO(lp.LinearOperator):
     def mult(self,x):
         """
         It returns  ``y=A^-1*x`` by solving the linear system ``Ay=x``
-
         with a certain ``scipy`` routine  defined above as ``method``.
 
         """
-        y,info = self.method(self.A,x,M=self.preconditioner)
+        ck=0
+        y,info = self.method(self.A,x,M=self.preconditioner,callback=count(ck))
         self.isconverged(info)
         return y
 
@@ -332,8 +400,8 @@ class CoarseLO(lp.LinearOperator):
 
     - ``Z`` : {np.matrix}
             deflation matrix;
-    - ``A`` : {list of arrays}
-            contains vectors ``A*Z_i``;
+    - ``A`` : {SparseLO}
+            to  compute vectors ``A*Z_i``;
     - ``r`` :  {int}
             ``rank(Z)``, dimension of the deflation subspace.
     """
@@ -378,8 +446,8 @@ class DeflationLO(lp.LinearOperator):
 
     **Parameters**
 
-    - ``z`` : {list of arrays}
-            columns of the deflation matrix.
+    - ``z`` : {np.matrix}
+            the deflation matrix. Its columns are read as arrays in a list ``self.z``.
 
     """
 

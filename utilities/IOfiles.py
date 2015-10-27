@@ -4,23 +4,71 @@ import h5py as h5
 
 
 def read_from_data(filename,pol):
+    """
+    Read a hdf5 file preprocessed by the AnalysisBackend
+    of the Polarbear Collaboration.
+
+    **Parameters**
+    - filename:{str}
+        path to the hdf5 file
+    - pol :{int}
+        - ``1``
+        read data for temperature only data;
+
+        - ``3``
+        read GQU for polarization only data;
+    """
+
     f=h5.File(filename,"r")
-    pixs = f['bolo_pair_0/pixel'][...]
-    polang=f['bolo_pair_0/pol_angle'][...]
+    hp_pixs=f['obspix'][...]
+    n_bolo_pair=f['n_bolo_pair'][...]
+    n_ces=f['n_sample_ces'][...]
+    print "Bolo Pairs: %d \t CES: %d "%(n_bolo_pair,n_ces)
+
+    group=f['bolo_pair_0']
+    pixs=group['pixel'][...]
+    polang=group['pol_angle'][...]
     if pol== 1:
-        d=f['bolo_pair_0/sum'][...]
-        weight=f['bolo_pair_0/weight_sum'][...]
+        d=group['sum'][...]
+        weight=group['weight_sum'][...]
     elif pol==3:
-        d=f['bolo_pair_0/dif'][...]
-        weight=f['bolo_pair_0/weight_dif'][...]
+        d=group['dif'][...]
+        weight=group['weight_dif'][...]
         polang+=np.pi/2.
 
+    #for i in range(n_bolo_pair):
+    for i in range(1,5):
+        group=f['bolo_pair_'+str(i)]
+
+        pixs_pair=group['pixel'][...]
+        pixs=np.append(pixs,pixs_pair)
+        polang_pair=group['pol_angle'][...]
+        if pol== 1:
+            d_pair=group['sum'][...]
+            d=np.append(d,d_pair)
+            weight_pair=group['weight_sum'][...]
+            weight=np.append(weight,weight_pair)
+        elif pol==3:
+            d_pair=group['dif'][...]
+            d=np.append(d,d_pair)
+            weight_pair=group['weight_dif'][...]
+            weight=np.append(weight,weight_pair)
+
+            polang_pair+=np.pi/2.
+        polang=np.append(polang,polang_pair)
+
     f.close()
-    return d,weight,polang,pixs
+
+    return d,weight,polang,pixs,hp_pixs
 
 
-def write_to_hdf5(filename,pairs,noise_values,d,phi=None):
-    obs_pixels=[i[1] for i in pairs]
+def write_to_hdf5(filename,obs_pixels,noise_values,d,phi=None):
+    """
+    Write onto hdf5 file whose datasets are created by the routine
+    ``utilities_functions.system_setup``
+
+    """
+
     f=h5.File(filename,"w")
     group=f.create_group("bolo_pair")
 
@@ -38,6 +86,10 @@ def write_to_hdf5(filename,pairs,noise_values,d,phi=None):
 
     f.close()
 def read_from_hdf5(filename):
+    """
+    Read from a hdf5 file whose datasets are created by the routine
+    ``utilities_functions.system_setup``
+    """
     f=h5.File(filename,"r")
 
     obs_pix=f['/bolo_pair/pixel'][...]

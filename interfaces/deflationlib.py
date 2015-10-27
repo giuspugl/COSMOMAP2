@@ -145,7 +145,7 @@ def build_Z(z,y,w,eps):
 
     **Returns**
 
-    - ``Z`` : {list of arrays}
+    - ``Z`` : {matrix}
             deflation subspace matrix;
     - ``r`` :  {int}
             ``rank(Z)``.
