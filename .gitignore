@@ -2,5 +2,7 @@
 .ipynb_checkpoints
 *.so
 *.app
-*.hdf5
+20120718_093931.hdf5
 *.fits
+doc/*
+

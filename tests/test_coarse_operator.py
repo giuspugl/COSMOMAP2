@@ -7,40 +7,42 @@ def test_coarse_operator():
     """
     Build and test the coarse operator E.
     """
-    nt,npix,nb,pol= 100,30,2,1
-    blocksize=nt/nb
-    d,pairs,phi,t,diag,x0=system_setup(nt,npix,nb,pol)
-    blocksize=nt/nb
-    for i in range(2,4):
-        tol=10**(-i)
-        for j in range(1,2) :
-            eps=10**(-j)
-            P=SparseLO(npix,nt,pairs,phi,pol)
-            N=BlockLO(blocksize,t,offdiag=True)
-            diagN=BlockLO(blocksize,diag,offdiag=False)
-            M=InverseLO(P.T*diagN*P,method=spla.cg)
-            #print nb,nt,npix
-            b=P.T*N*d
-            A=P.T*N*P
-            # Build deflation supspace
-            h=[]
-            w=[]
-            w,h=arnoldi(M*A,b,x0=x0,tol=tol,maxiter=1,inner_m=pol*npix)
-            m=len(w)
-            H=build_hess(h,m)
+    for pol in [1,3]:
 
-            z,y=la.eig(H,check_finite=False)
+        nt,npix,nb= 100,30,2
+        blocksize=nt/nb
+        d,pairs,phi,t,diag=system_setup(nt,npix,nb,pol)
+        blocksize=nt/nb
+        x0=np.zeros(pol*npix)
+        P=SparseLO(npix,nt,pairs,phi,pol)
+        N=BlockLO(blocksize,t,offdiag=True)
+        diagN=BlockLO(blocksize,diag,offdiag=False)
+        M=InverseLO(P.T*diagN*P,method=spla.cg)
+        #print nb,nt,npix
+        b=P.T*N*d
+        A=P.T*N*P
+        # Build deflation supspace
+        h=[]
+        w=[]
 
-            Z,r= build_Z(z,y, w, eps)
+        tol=1.e-2
 
-            # Build Coarse operator
+        w,h=arnoldi(M*A,b,x0=x0,tol=tol,maxiter=1,inner_m=pol*npix)
+        m=len(w)
+        H=build_hess(h,m)
 
-            E=CoarseLO(Z,A,r)
+        z,y=la.eig(H,check_finite=False)
+        eps=.1*abs(max(z))
+        Z,r= build_Z(z,y, w, eps)
 
-            v=np.ones(r)
-            y=E*v
+        # Build Coarse operator
 
-            y2= la.solve(E.L.dot(E.U),v)
-            assert  np.allclose(y2,y)
-            
+        E=CoarseLO(Z,A,r)
+
+        v=np.ones(r)
+        y=E*v
+
+        y2= la.solve(E.L.dot(E.U),v)
+        assert  np.allclose(y2,y)
+
 test_coarse_operator()

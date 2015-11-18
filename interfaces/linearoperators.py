@@ -12,8 +12,11 @@ class SparseLO(lp.LinearOperator):
     It constitutes an interface for dealing with the projection operator.
 
     Since this can be represented as a sparse matrix, it is initialized \
-    by passing an array of pairs which resembles the  ``(i,j)`` positions \
+    by passing an array of observed pixels which resembles the  ``(i,j)`` positions \
     of the non-null elements of  the matrix.
+
+    During its initialization,  a private member function ``initializeweights`` is called
+    to precompute quite remarkable quantities required to get the solution.
 
 
     **Parameters**
@@ -22,7 +25,7 @@ class SparseLO(lp.LinearOperator):
         number of columns;
     - ``m`` : {int}
         number of rows;
-    - ``pairs`` : { array }
+    - ``obs_pixs`` : { array }
          pixels id, ``j`` of the non-null elements of  the matrix, ``A_(i,j)``;
     - ``pol`` : {int}
         process an intensity only map (``[default] pol=1``), intensity/polarization
@@ -74,9 +77,12 @@ class SparseLO(lp.LinearOperator):
 
         """
         x=np.zeros(self.nrows)
-        for i,j in np.ndenumerate(self.pairs):
+        i=0
+        #for i,j in np.ndenumerate(self.pairs):
+        for j in self.pairs:
 
             x[i]+=v[3*j]+v[3*j+1]*self.cos[i]+v[3*j+2]*self.sin[i]
+            i+=1
 
         return x
 
@@ -88,32 +94,52 @@ class SparseLO(lp.LinearOperator):
 
         """
         x=np.zeros(self.ncols*self.pol)
-
-        for i,j in np.ndenumerate(self.pairs):
+        i=0
+        #for i,j in np.ndenumerate(self.pairs):
+        for j in self.pairs:
             x[3*j]+=v[i]
 
             x[1+3*j]+=v[i]*self.cos[i]
             x[2+3*j]+=v[i]*self.sin[i]
-
+            i+=1
         return x
     def initializeweights(self,phi):
+        """
+        Pre-compute the quantitities needed in the explicit implementation of ``(P^T P)^-1``:
 
+        - counts : how many times a given pixel is observed in the timestream;
+        If ``pol==3``,
+        - precompute all the goniometric functions involving the angle ``phi``,
+          the determinant, the trace, the eigenvalues  of each block of ``P``.
+
+        - mask: mask from  either unobserved pixels  or   bad constrained pixels
+                (``condition number>1e3``) ;
+
+        """
         self.counts=np.zeros(self.ncols)
-        for i,j in np.ndenumerate(self.pairs):
-            self.counts[j]+=1.
+        #for i,j in np.ndenumerate(self.pairs):
+        if self.pol==1:
+            for j in self.pairs:
+                self.counts[j]+=1.
 
-        self.mask=np.where(self.counts !=0)[0]
+            self.mask=np.where(self.counts !=0)[0]
 
         if self.pol==3:
+
             self.cos=np.cos(2*phi)
             self.sin=np.sin(2*phi)
             self.cos2=np.zeros(self.ncols)
             self.sin2=np.zeros(self.ncols)
             self.sincos=np.zeros(self.ncols)
-            for i,j in np.ndenumerate(self.pairs):
+            #for i,j in np.ndenumerate(self.pairs):
+            i=0
+            for j in self.pairs:
+                self.counts[j]+=1.
+
                 self.cos2[j]+=self.cos[i]*self.cos[i]
                 self.sin2[j]+=self.sin[i]*self.sin[i]
                 self.sincos[j]+=self.cos[i]*self.sin[i]
+                i+=1
 
             det=(self.cos2*self.sin2)-(self.sincos*self.sincos)
 
@@ -132,11 +158,11 @@ class SparseLO(lp.LinearOperator):
             self.mask=mask
 
 
-    def __init__(self,n,m,pairs,phi=None,pol=1):
+    def __init__(self,n,m,obs_pixs,phi=None,pol=1):
         self.ncols=n
         self.pol=pol
         self.nrows=m
-        self.pairs=pairs
+        self.pairs=obs_pixs
         self.initializeweights(phi)
         if pol==3:
             self.__polarization='IQU'
@@ -270,7 +296,7 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
         return self.__isoffdiag
 
 
-class BlockPrec(lp.LinearOperator):
+class BlockDiagonalPreconditionerLO(lp.LinearOperator):
     def mult(self,x):
         y=x*0.
         if self.pol==1:
@@ -296,7 +322,7 @@ class BlockPrec(lp.LinearOperator):
             self.cos2=cos2
             self.sincos=sincos
 
-        super(BlockPrec,self).__init__(nargin=self.size,nargout=self.size, matvec=self.mult,
+        super(BlockDiagonalPreconditionerLO,self).__init__(nargin=self.size,nargout=self.size, matvec=self.mult,
                                                 symmetric=True)
 
 

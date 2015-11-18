@@ -1,9 +1,6 @@
 import numpy as np
 from interfaces import *
 from utilities import *
-#from utilities.IOfiles import read_from_hdf5
-#from utilities.linear_algebra_funcs import *
-#from utilities.utilities_functions import *
 
 def test_block_diagonal_preconditioner():
     """
@@ -79,17 +76,19 @@ def test_block_diag_precond_action():
     ``x1= CG(A, b, Precond=M_bd).``
     we check whether ``x0 = x1``.
 
-    The input come from an hdf5 file in data/ directory.
+    The input comes from an hdf5 file in data/ directory.
 
     """
     # input  from file, nt and np fixed
-    nt,npix,nb,pol=100,15,2,3
-    pairs,phi,t,diag,d=read_from_hdf5('data/testcase_block_diag_3.hdf5')
+    npix,pol=15,3
+    d,pairs,phi,weight=read_from_hdf5('data/testcase_block_diag_4.hdf5')
+    nt,nb=len(d),len(weight)
+
 
     #construct the block diagonal operator
     x0=np.ones(pol*npix)
     blocksize=nt/nb
-    N=BlockLO(blocksize,diag,offdiag=False)
+    N=BlockLO(blocksize,weight,offdiag=False)
     P=SparseLO(npix,nt,pairs,phi,pol=pol)
 
     A=P.T*N*P
@@ -98,7 +97,7 @@ def test_block_diag_precond_action():
     vec=M_bd*b
     assert checking_output(M_bd.converged)
     print vec,x0
-    assert  np.allclose(vec,x0,atol=1.e-4)
+    assert  np.allclose(vec,x0,atol=1.e-3)
 
 
 

@@ -1,0 +1,162 @@
+profiling SparseLO init
+/home/peppe/Dropbox/phd/pb/COSMOMAP2/interfaces/linearoperators.py:130: RuntimeWarning: invalid value encountered in divide
+  cond_num=np.abs(lambda_max/lambda_min)
+/home/peppe/Dropbox/phd/pb/COSMOMAP2/interfaces/linearoperators.py:131: RuntimeWarning: invalid value encountered in less_equal
+  mask=np.where(cond_num<=1.e3)[0]
+         25035887 function calls (25035886 primitive calls) in 85.087 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000   85.087   85.087 /home/peppe/Dropbox/phd/pb/COSMOMAP2/interfaces/linearoperators.py:139(__init__)
+        1   69.127   69.127   85.087   85.087 /home/peppe/Dropbox/phd/pb/COSMOMAP2/interfaces/linearoperators.py:99(initializeweights)
+ 12517884   10.790    0.000   15.959    0.000 /usr/lib/python2.7/dist-packages/numpy/lib/index_tricks.py:490(__next__)
+ 12517884    5.169    0.000    5.169    0.000 {next}
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/warnings.py:24(_show_warning)
+        2    0.000    0.000    0.000    0.000 /home/peppe/.local/lib/python2.7/site-packages/pyfits/core.py:100(formatwarning)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/warnings.py:36(formatwarning)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/linecache.py:13(getline)
+      2/1    0.000    0.000    0.000    0.000 /usr/local/lib/python2.7/dist-packages/linop/linop.py:141(__init__)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/linecache.py:33(getlines)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/linecache.py:68(updatecache)
+        2    0.000    0.000    0.000    0.000 /usr/local/lib/python2.7/dist-packages/linop/linop.py:61(__init__)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1142(info)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1252(_log)
+        1    0.000    0.000    0.000    0.000 {method 'readlines' of 'file' objects}
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1239(makeRecord)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:242(__init__)
+        2    0.000    0.000    0.000    0.000 {method 'write' of 'file' objects}
+        4    0.000    0.000    0.000    0.000 {numpy.core.multiarray.zeros}
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/dist-packages/numpy/lib/index_tricks.py:487(__init__)
+        2    0.000    0.000    0.000    0.000 {numpy.core.multiarray.where}
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/dist-packages/numpy/core/numeric.py:392(asarray)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1273(handle)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1218(findCaller)
+        1    0.000    0.000    0.000    0.000 {open}
+        1    0.000    0.000    0.000    0.000 {posix.stat}
+        2    0.000    0.000    0.000    0.000 {numpy.core.multiarray.array}
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/posixpath.py:104(splitext)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1305(callHandlers)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/posixpath.py:119(basename)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/genericpath.py:85(_splitext)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1345(isEnabledFor)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:81(<lambda>)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/threading.py:967(name)
+        6    0.000    0.000    0.000    0.000 {method 'rfind' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:153(getLevelName)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:598(filter)
+       11    0.000    0.000    0.000    0.000 {method 'get' of 'dict' objects}
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/threading.py:1152(currentThread)
+        4    0.000    0.000    0.000    0.000 {hasattr}
+        2    0.000    0.000    0.000    0.000 {sys._getframe}
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1331(getEffectiveLevel)
+        2    0.000    0.000    0.000    0.000 {issubclass}
+        1    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 {method 'strip' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 /usr/local/lib/python2.7/dist-packages/linop/linop.py:84(symmetric)
+        2    0.000    0.000    0.000    0.000 {len}
+        1    0.000    0.000    0.000    0.000 {method 'endswith' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/posixpath.py:51(normcase)
+        1    0.000    0.000    0.000    0.000 {isinstance}
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/dist-packages/numpy/lib/index_tricks.py:504(__iter__)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        2    0.000    0.000    0.000    0.000 {time.time}
+        2    0.000    0.000    0.000    0.000 {posix.getpid}
+        4    0.000    0.000    0.000    0.000 {thread.get_ident}
+        2    0.000    0.000    0.000    0.000 /usr/local/lib/python2.7/dist-packages/linop/linop.py:89(shape)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1684(handle)
+
+
+
+profiling BlockPrec init
+         42 function calls in 0.000 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.000    0.000 /home/peppe/Dropbox/phd/pb/COSMOMAP2/interfaces/linearoperators.py:293(__init__)
+        1    0.000    0.000    0.000    0.000 /usr/local/lib/python2.7/dist-packages/linop/linop.py:141(__init__)
+        1    0.000    0.000    0.000    0.000 /usr/local/lib/python2.7/dist-packages/linop/linop.py:61(__init__)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1142(info)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1252(_log)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1239(makeRecord)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:242(__init__)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1218(findCaller)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1273(handle)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/posixpath.py:104(splitext)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/posixpath.py:119(basename)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/genericpath.py:85(_splitext)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1305(callHandlers)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:81(<lambda>)
+        3    0.000    0.000    0.000    0.000 {method 'rfind' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1345(isEnabledFor)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/threading.py:1152(currentThread)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:153(getLevelName)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:598(filter)
+        7    0.000    0.000    0.000    0.000 {method 'get' of 'dict' objects}
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/threading.py:967(name)
+        2    0.000    0.000    0.000    0.000 {thread.get_ident}
+        1    0.000    0.000    0.000    0.000 /usr/local/lib/python2.7/dist-packages/linop/linop.py:89(shape)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1331(getEffectiveLevel)
+        1    0.000    0.000    0.000    0.000 {sys._getframe}
+        1    0.000    0.000    0.000    0.000 {time.time}
+        1    0.000    0.000    0.000    0.000 {posix.getpid}
+        1    0.000    0.000    0.000    0.000 /usr/local/lib/python2.7/dist-packages/linop/linop.py:84(symmetric)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/posixpath.py:51(normcase)
+        2    0.000    0.000    0.000    0.000 {hasattr}
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/logging/__init__.py:1684(handle)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+
+
+
+profile b=P.T*d
+         12517907 function calls in 240.941 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000  240.941  240.941 /usr/local/lib/python2.7/dist-packages/linop/linop.py:271(__mul__)
+        1    0.000    0.000  240.941  240.941 /usr/local/lib/python2.7/dist-packages/linop/linop.py:265(__mul_vector)
+        1    0.000    0.000  240.941  240.941 /usr/local/lib/python2.7/dist-packages/linop/linop.py:187(matvec)
+        1  230.516  230.516  240.941  240.941 /home/peppe/Dropbox/phd/pb/COSMOMAP2/interfaces/linearoperators.py:83(rmult_iqu)
+  6258942    7.234    0.000   10.425    0.000 /usr/lib/python2.7/dist-packages/numpy/lib/index_tricks.py:490(__next__)
+  6258942    3.191    0.000    3.191    0.000 {next}
+        2    0.000    0.000    0.000    0.000 {method 'reshape' of 'numpy.ndarray' objects}
+        1    0.000    0.000    0.000    0.000 {method 'astype' of 'numpy.ndarray' objects}
+        1    0.000    0.000    0.000    0.000 {numpy.core.multiarray.zeros}
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/dist-packages/numpy/core/numeric.py:1810(isscalar)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/dist-packages/numpy/lib/index_tricks.py:487(__init__)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/dist-packages/numpy/core/numeric.py:462(asanyarray)
+        2    0.000    0.000    0.000    0.000 {numpy.core.multiarray.array}
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/dist-packages/numpy/core/numeric.py:392(asarray)
+        1    0.000    0.000    0.000    0.000 {numpy.core.multiarray.result_type}
+        3    0.000    0.000    0.000    0.000 {isinstance}
+        1    0.000    0.000    0.000    0.000 /usr/local/lib/python2.7/dist-packages/linop/linop.py:173(T)
+        1    0.000    0.000    0.000    0.000 /usr/local/lib/python2.7/dist-packages/linop/linop.py:94(dtype)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/dist-packages/numpy/lib/index_tricks.py:504(__iter__)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 /usr/local/lib/python2.7/dist-packages/linop/linop.py:89(shape)
+
+
+
+profile Mbd*b
+         18 function calls in 0.006 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.006    0.006 /usr/local/lib/python2.7/dist-packages/linop/linop.py:271(__mul__)
+        1    0.000    0.000    0.006    0.006 /usr/local/lib/python2.7/dist-packages/linop/linop.py:265(__mul_vector)
+        1    0.000    0.000    0.006    0.006 /usr/local/lib/python2.7/dist-packages/linop/linop.py:187(matvec)
+        1    0.006    0.006    0.006    0.006 /home/peppe/Dropbox/phd/pb/COSMOMAP2/interfaces/linearoperators.py:278(mult)
+        1    0.000    0.000    0.000    0.000 {method 'astype' of 'numpy.ndarray' objects}
+        2    0.000    0.000    0.000    0.000 {method 'reshape' of 'numpy.ndarray' objects}
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/dist-packages/numpy/core/numeric.py:462(asanyarray)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python2.7/dist-packages/numpy/core/numeric.py:1810(isscalar)
+        1    0.000    0.000    0.000    0.000 {numpy.core.multiarray.array}
+        3    0.000    0.000    0.000    0.000 {isinstance}
+        1    0.000    0.000    0.000    0.000 {numpy.core.multiarray.result_type}
+        1    0.000    0.000    0.000    0.000 /usr/local/lib/python2.7/dist-packages/linop/linop.py:89(shape)
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+        1    0.000    0.000    0.000    0.000 /usr/local/lib/python2.7/dist-packages/linop/linop.py:94(dtype)
+        1    0.000    0.000    0.000    0.000 {len}

@@ -34,7 +34,7 @@ def read_from_data(filename,pol):
     elif pol==3:
         d=group['dif'][...]
         weight=group['weight_dif'][...]
-        polang+=np.pi/2.
+        #polang+=np.pi/2.
 
     #for i in range(n_bolo_pair):
     for i in range(1,5):
@@ -54,7 +54,7 @@ def read_from_data(filename,pol):
             weight_pair=group['weight_dif'][...]
             weight=np.append(weight,weight_pair)
 
-            polang_pair+=np.pi/2.
+            #polang_pair+=np.pi/2.
         polang=np.append(polang,polang_pair)
 
     f.close()
@@ -85,6 +85,8 @@ def write_to_hdf5(filename,obs_pixels,noise_values,d,phi=None):
 
 
     f.close()
+    pass
+
 def read_from_hdf5(filename):
     """
     Read from a hdf5 file whose datasets are created by the routine
@@ -94,12 +96,27 @@ def read_from_hdf5(filename):
 
     obs_pix=f['/bolo_pair/pixel'][...]
     polang=f['/bolo_pair/pol_angle'][...]
-    weight=[i for i in f['/bolo_pair/weight'][...]]
-    diag=[i[0] for i in weight]
+    weight=f['/bolo_pair/weight'][...]
+
     det=f['bolo_pair/sum'][...]
     f.close()
 
-    nt=len(obs_pix)
-    pairs=[(i,obs_pix[i]) for i in xrange(nt)]
+    return det,obs_pix,polang,weight
 
-    return pairs,polang,weight,diag,det
+def plot_histogram_eigenvalues(z):
+    """
+    save a plot containing an histogram  of the eigenvalues ``z``
+    """
+
+    import matplotlib.pyplot as plt
+    from matplotlib import rc
+    
+    histo,edges=np.histogram(abs(z),bins=20,normed=False)
+    bins=np.array([(edges[i]+edges[i+1])/2. for i in range(len(histo))])
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.title('Eigenvalues Histogram')
+    plt.xlabel(r'$\lambda_i $')
+    plt.hist(histo,bins=bins,color='b', linewidth=1.5)
+    plt.savefig('data/eigenvalues_histogram.png')
+    pass

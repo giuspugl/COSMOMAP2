@@ -23,10 +23,11 @@ def test_matrix_vector_product():
 
             y2=[x[j] for j in pairs]
             assert np.allclose(y,y2)
-
 def test_block_prec():
     """
-    test the action of the inverse matrix ``(A^T*A)^-1``.
+    test  the inverse matrix ``(A^T*A)^-1``. Whose action when applied on a vector
+    is explicitly implemented through the derived class ``BlockDiagonalPreconditionerLO``
+
     """
 
     for pol in [1,3]:
@@ -37,19 +38,19 @@ def test_block_prec():
             for npix in xrange(5,nt ):
                 x=np.ones(pol*npix)
                 pairs=pairs_gen(nt,npix,pol=pol)
-                print "obs_pixs\t",pairs
+                #print "obs_pixs\t",pairs
                 P=SparseLO(npix,nt,pairs,phi,pol=pol)
 
                 v=P.T*P*x
-                print "nhits\n",P.counts
+                #print "nhits\n",P.counts
                 #print " A^T A*x\n", v
-                print P.mask
+                #print P.mask
                 v2=v*0.
                 if pol==1:
-                    M_bd=BlockPrec(P.counts,P.mask,npix,pol)
+                    M_bd=BlockDiagonalPreconditionerLO(P.counts,P.mask,npix,pol)
                     v2[P.mask]=v[P.mask]/P.counts[P.mask]
                 elif pol==3:
-                    M_bd=BlockPrec(P.counts,P.mask,npix,pol,P.sin2,P.cos2,P.sincos)
+                    M_bd=BlockDiagonalPreconditionerLO(P.counts,P.mask,npix,pol,P.sin2,P.cos2,P.sincos)
                     for j in xrange(len(P.mask)):
                         i=P.mask[j]
                         v2[3*i]=v[3*i]/P.counts[i]
@@ -57,10 +58,10 @@ def test_block_prec():
                         utmp=P.cos2[i]*v[i*3+2]-P.sincos[i]*v[i*3+1]
                         v2[i*3+1],v2[i*3+2]=qtmp,utmp
 
-                print "(A^T A)-1 A^T A*x\n",v2
+                #print "(A^T A)-1 A^T A*x\n",v2
 
                 v3=M_bd*P.T*P*x
-                print "Mbd*v\n",v3
+                #print "Mbd*v\n",v3
                 assert np.allclose(v2,v3)
 
 
