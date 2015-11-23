@@ -22,9 +22,9 @@ def test_block_diagonal_precond_onto_real_data():
     print "SparseLO init"
 
     pr=profile_run()
-    pr.enable()
+    #pr.enable()
     P=SparseLO(npix,nt,pixs,phi,pol=pol)
-    pr.disable()
+    #pr.disable()
 
     A=P.T*P
 
@@ -47,11 +47,11 @@ def test_block_diagonal_precond_onto_real_data():
     x=Mbd*b
     ck=0
     #x,info=spla.cg(A,b,x0=x0,M=Mbd,maxiter=10,callback=count(ck))
-    output_profile(pr)
+    #output_profile(pr)
     #assert checking_output(info)
 
 
-    hp_map=reorganize_map(x,hp_pixs,npix,nside,pol,fname,write=True)
+    hp_map=reorganize_map(x,hp_pixs,npix,nside,pol,fname,write=False)
     mask=obspix2mask(hp_pixs,pixs,nside,'data/mask_ra23.fits',write=False)
 
     coords=[-13.45,-32.09]
@@ -61,7 +61,7 @@ def test_block_diagonal_precond_onto_real_data():
     #hp_map[1]*=-1.
     #hp_map[2]*=-1.
 
-    #compare_maps(hp_map,inm,pol,coords,mask)
+    compare_maps(hp_map,inm,pol,coords,mask)
 
 
 

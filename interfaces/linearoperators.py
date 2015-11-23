@@ -351,8 +351,8 @@ class InverseLO(lp.LinearOperator):
         with a certain ``scipy`` routine  defined above as ``method``.
 
         """
-        ck=0
-        y,info = self.method(self.A,x,M=self.preconditioner,callback=count(ck))
+
+        y,info = self.method(self.A,x,M=self.preconditioner)
         self.isconverged(info)
         return y
 

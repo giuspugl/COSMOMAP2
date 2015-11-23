@@ -57,14 +57,14 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname,write=False):
 
     - healpix_map:{list of arrays}
          pixelized map  with Healpix.
-         
+
     """
 
     healpix_npix=hp.nside2npix(nside)
 
-    healpix_map=np.zeros(healpix_npix*pol).reshape((healpix_npix,pol))
 
     if pol==3:
+        healpix_map=np.zeros(healpix_npix*pol).reshape((healpix_npix,pol))
         i=mapin[np.arange(0,npix*3,3)]
         q,u=mapin[np.arange(1,npix*3,3)],mapin[np.arange(2,npix*3,3)]
         #print i.shape,healpix_map[obspix,0].shape
@@ -75,7 +75,10 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname,write=False):
         hp_list=[healpix_map[:,0],healpix_map[:,1],healpix_map[:,2]]
 
     elif pol==1:
-        healpix_map[obspix,0]=mapin
+        healpix_map=np.zeros(healpix_npix)
+        print healpix_map.shape
+        healpix_map[obspix]=mapin
+        hp_list=[healpix_map]
     if write:
         hp.write_map(fname,hp_list)
 
@@ -85,35 +88,33 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname,write=False):
 
 def compare_maps(outm,inm,pol,coords,mask):
     if pol==1:
-        inm*=mask
+        #   inm*=mask
         maxval=max(inm)
         minval=min(inm)
 
-        hp.gnomview(inm,rot=coords,xsize=600,min=minval,max=maxval,title='I input map')
+        hp.gnomview(inm,rot=coords,xsize=600,min=minval,max=maxval,title='I input map',sub=131)
         hp.graticule(dpar=5,dmer=5,local=True)
-        hp.gnomview(outm[0],rot=coords,xsize=600,min=minval,max=maxval,title='I output')
+        hp.gnomview(outm[0],rot=coords,xsize=600,min=minval,max=maxval,title='I output',sub=132)
         hp.graticule(dpar=5,dmer=5,local=True)
-        hp.gnomview(inm-outm[0],rot=coords,xsize=600,min=minval,max=maxval,title=' I diff')
+        hp.gnomview(inm-outm[0],rot=coords,xsize=600,min=minval,max=maxval,title=' I diff',sub=133)
         hp.graticule(dpar=5,dmer=5,local=True)
 
     elif pol==3:
-
-
         maxval=max(inm[1])
         minval=min(inm[1])
-        hp.gnomview(inm[1],rot=coords,xsize=600,min=minval,max=maxval,title='Q input map')
+        hp.gnomview(inm[1],rot=coords,xsize=600,min=minval,max=maxval,title='Q input map',sub=231)
         hp.graticule(dpar=5,dmer=5,local=True)
-        hp.gnomview(outm[1],rot=coords,xsize=600,min=minval,max=maxval,title='Q output map')
+        hp.gnomview(outm[1],rot=coords,xsize=600,min=minval,max=maxval,title='Q output map',sub=232)
         hp.graticule(dpar=5,dmer=5,local=True)
-        hp.gnomview(inm[1]-outm[1],rot=coords,xsize=600,min=minval,max=maxval,title='Q diff')
+        hp.gnomview(inm[1]-outm[1],rot=coords,xsize=600,min=minval,max=maxval,title='Q diff',sub=233)
         hp.graticule(dpar=5,dmer=5,local=True)
         maxval=max(inm[2])
         minval=min(inm[2])
-        hp.gnomview(inm[2],rot=coords,xsize=600,min=minval,max=maxval,title='U input map')
+        hp.gnomview(inm[2],rot=coords,xsize=600,min=minval,max=maxval,title='U input map',sub=234)
         hp.graticule(dpar=5,dmer=5,local=True)
-        hp.gnomview(outm[2],rot=coords,xsize=600,min=minval,max=maxval,title='U output map')
+        hp.gnomview(outm[2],rot=coords,xsize=600,min=minval,max=maxval,title='U output map',sub=235)
         hp.graticule(dpar=5,dmer=5,local=True)
-        hp.gnomview(inm[2]-outm[2],rot=coords,xsize=600,min=minval,max=maxval,title='U diff')
+        hp.gnomview(inm[2]-outm[2],rot=coords,xsize=600,min=minval,max=maxval,title='U diff',sub=236)
         hp.graticule(dpar=5,dmer=5,local=True)
 
     plt.show()
