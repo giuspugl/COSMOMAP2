@@ -25,7 +25,7 @@ before_install:
 install:
   - 
   - conda install --yes anaconda-client
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose dateutil pandas statsmodels
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose dateutil pandas statsmodels h5py
   - pip install coveralls
   - pip install linop
   - ./setup.sh
