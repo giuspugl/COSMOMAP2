@@ -10,7 +10,7 @@ def test_block_diagonal_precond_onto_real_data():
     Test the action of the block diagonal preconditioner
     with a realistic scanning strategy.
     """
-    
+
     pol=3
     d,t,phi,pixs,hp_pixs=read_from_data('data/20120718_093931.hdf5',pol=pol)
 
@@ -21,7 +21,10 @@ def test_block_diagonal_precond_onto_real_data():
 
     print "SparseLO init"
 
+    pr=profile_run()
+    pr.enable()
     P=SparseLO(npix,nt,pixs,phi,pol=pol)
+    pr.disable()
 
     A=P.T*P
 
@@ -40,11 +43,8 @@ def test_block_diagonal_precond_onto_real_data():
 
 
     x0=np.zeros(npix*pol)
-    pr=profile_run()
-    pr.enable()
     b=P.T*d
     x=Mbd*b
-    pr.disable()
     ck=0
     #x,info=spla.cg(A,b,x0=x0,M=Mbd,maxiter=10,callback=count(ck))
     output_profile(pr)
@@ -61,7 +61,7 @@ def test_block_diagonal_precond_onto_real_data():
     #hp_map[1]*=-1.
     #hp_map[2]*=-1.
 
-    compare_maps(hp_map,inm,pol,coords,mask)
+    #compare_maps(hp_map,inm,pol,coords,mask)
 
 
 

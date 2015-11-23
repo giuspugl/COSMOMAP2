@@ -9,14 +9,16 @@ def read_from_data(filename,pol):
     of the Polarbear Collaboration.
 
     **Parameters**
-    - filename:{str}
-        path to the hdf5 file
-    - pol :{int}
-        - ``1``
-        read data for temperature only data;
 
-        - ``3``
-        read GQU for polarization only data;
+    - ``filename``:{str}
+        path to the hdf5 file
+    - ``pol``:{int}
+
+      - ``1``: read data for temperature only data;
+
+      - ``3``: read  for polarization data;
+
+
     """
 
     f=h5.File(filename,"r")
@@ -110,7 +112,7 @@ def plot_histogram_eigenvalues(z):
 
     import matplotlib.pyplot as plt
     from matplotlib import rc
-    
+
     histo,edges=np.histogram(abs(z),bins=20,normed=False)
     bins=np.array([(edges[i]+edges[i+1])/2. for i in range(len(histo))])
     plt.xscale('log')

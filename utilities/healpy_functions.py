@@ -19,6 +19,7 @@ def  obspix2mask(obspix,pixs,nside,fname,write=False):
         if ``True`` it writes onto the file, it reads from it otherwise
 
     **Returns**
+
     - mask :{array}
 
 
@@ -40,6 +41,7 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname,write=False):
     for a polarization analysis in to 3 arrays ``i,q,u``.
 
     **Parameters**
+
     - ``mapin``:{array}
         solution array map (``size=npix*pol``);
     - ``obspix``:{array}
@@ -52,8 +54,10 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname,write=False):
     - ``write``:{bool}
 
     **Returns**
+
     - healpix_map:{list of arrays}
          pixelized map  with Healpix.
+         
     """
 
     healpix_npix=hp.nside2npix(nside)

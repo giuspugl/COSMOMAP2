@@ -26,21 +26,21 @@ class SparseLO(lp.LinearOperator):
     - ``m`` : {int}
         number of rows;
     - ``obs_pixs`` : { array }
-         pixels id, ``j`` of the non-null elements of  the matrix, ``A_(i,j)``;
+         pixels id, ``j`` of the non-null elements of  the matrix, :math:`A_{i,j}`;
     - ``pol`` : {int}
         process an intensity only map (``[default] pol=1``), intensity/polarization
         map (``pol=3``);
-    - ``phi``: {array}
+    - :math:`phi`: {array}
         array with polarization angles (if ``pol=3``).
 
     """
 
     def mult(self,v):
         """
-        Performs the product of a sparse matrix ``A*v``,\
-         with ``v`` a  ``numpy npix``  dense vector.
+        Performs the product of a sparse matrix :math:`Av`,\
+         with :math:`v` a  ``numpy`` npix  dense vector.
 
-        It extracts the components of ``v`` corresponding  to the non-null \
+        It extracts the components of :math:`v` corresponding  to the non-null \
         elements of the operator.
 
         """
@@ -53,7 +53,7 @@ class SparseLO(lp.LinearOperator):
 
     def rmult(self,v):
         """
-        Performs the product for the transpose operator ``A^T``.
+        Performs the product for the transpose operator :math:`A^T`.
 
         """
         x=np.zeros(self.ncols)
@@ -65,15 +65,18 @@ class SparseLO(lp.LinearOperator):
 
     def mult_iqu(self,v):
         """
-        Performs the product of a sparse matrix ``A*v``,\
+        Performs the product of a sparse matrix :math:`Av`,\
         with ``v`` a  ``numpy`` dense vector containing the three Stokes [IQU].
         Compared to the operation ``mult`` this routine returns a TOD like vector,
         defined as:
 
-        ``d_t= I_p + Q_p*cos(2*phi_t)+ U_p*sin(2*phi_t).``
+        .. math::
 
-        with ``p`` is the pixel observed at time ``t`` with polarization angle
-        ``phi_t``.
+            d_t= I_p + Q_p \cos(2\phi_t)+ U_p \sin(2\phi_t).
+
+
+        with :math:`p` is the pixel observed at time :math:`t` with polarization angle
+        :math:`\phi_t`.
 
         """
         x=np.zeros(self.nrows)
@@ -88,7 +91,7 @@ class SparseLO(lp.LinearOperator):
 
     def rmult_iqu(self,v):
         """
-        Performs the product for the transpose operator ``A^T`` to get a IQU map-like vector.
+        Performs the product for the transpose operator :math:`A^T` to get a IQU map-like vector.
         Since this vector resembles the pixel of 3 maps it has 3 times the size ``Npix``.
         Values of the same pixel are stored in the memory contiguously.
 
@@ -105,16 +108,19 @@ class SparseLO(lp.LinearOperator):
         return x
     def initializeweights(self,phi):
         """
-        Pre-compute the quantitities needed in the explicit implementation of ``(P^T P)^-1``:
 
-        - counts : how many times a given pixel is observed in the timestream;
-        If ``pol==3``,
-        - precompute all the goniometric functions involving the angle ``phi``,
-          the determinant, the trace, the eigenvalues  of each block of ``P``.
+        Pre-compute the quantitities needed in the explicit
+        implementation of :math:`(P^T P)^{-1}`:
 
-        - mask: mask from  either unobserved pixels  or   bad constrained pixels
-                (``condition number>1e3``) ;
+        - ``counts`` :
+            how many times a given pixel is observed in the timestream;
+        - ``mask``:
+          mask from  either unobserved pixels  or   bad constrained (:math:`k >10^3`, with :math:`k` being
+          the condition number of the Pointing matrix block for  the  polarization case) ;
 
+        [IF  ``pol==3``]: it precomputes all the goniometric functions
+        involving the angle :math:`phi`, the determinant, the trace,
+        the eigenvalues  of each block of :math:`P`.
         """
         self.counts=np.zeros(self.ncols)
         #for i,j in np.ndenumerate(self.pairs):
@@ -150,7 +156,7 @@ class SparseLO(lp.LinearOperator):
             lambda_min=tr/2. - sqrt
 
             cond_num=np.abs(lambda_max/lambda_min)
-            mask=np.where(cond_num<=1.e3)[0]
+            mask=np.where(cond_num<=1.e2)[0]
 
             self.cos2[mask]/=det[mask]
             self.sin2[mask]/=det[mask]
@@ -196,11 +202,9 @@ class ToeplitzLO(lp.LinearOperator):
     Toeplitz matrix.
     This particular kind of matrices satisfy the following relation:
 
-    ``A_(i,j)=A_(i+1,j+1)=a_(i-j)``
+    .. math::
 
-    given the symmetry we further have:
-
-    ``A_(i,j)=A_(i+1,j+1)=a_|i-j|``
+        A_{i,j}=A_{i+1,j+1}=a_{i-j}
 
     Therefore, it is enough to initialize ``A`` by mean of an array ``a`` of ``size = dim``.
 
@@ -245,7 +249,7 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
     **Parameters**
 
     - ``blocksize`` : {int}
-        The size of each diagonal block, it is : ``blocksize= n/nblocks``.
+        The size of each diagonal block, it is : :math:`blocksize= n/nblocks`.
     - ``t`` : {array}
         noise values for each block in the operator
     - ``offdiag`` : {bool}
@@ -254,7 +258,7 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
         - True : ``t`` is a list of array,\
 
                 ``shape(t)= [nblocks,bandsize]``.
-                In general ``bandsize!= blocksize`` in order
+                In general ```bandsize!=blocksize`` in order
                 to have a Toeplitz band diagonal operator.
 
         - False : ``t`` is a list with values that will define the diagonal operator.\
@@ -329,7 +333,7 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
 
 class InverseLO(lp.LinearOperator):
     """
-    Construct the inverse operator of ``A``, ``A^-1`` as a linear operator.
+    Construct the inverse operator of a matrix :math:`A`, as a linear operator.
 
     **Parameters**
 
@@ -343,7 +347,7 @@ class InverseLO(lp.LinearOperator):
     """
     def mult(self,x):
         """
-        It returns  ``y=A^-1*x`` by solving the linear system ``Ay=x``
+        It returns  :math:`y=A^{-1}x` by solving the linear system :math:`Ay=x`
         with a certain ``scipy`` routine  defined above as ``method``.
 
         """
@@ -416,9 +420,9 @@ from scipy.linalg import solve,lu
 
 class CoarseLO(lp.LinearOperator):
     """
-    This class contains all the operation involving the coarse operator ``E``.
-    In this implementation ``E`` is always applied to a vector wiht
-    its inverse : ``E^{-1}``.
+    This class contains all the operation involving the coarse operator :math:`E`.
+    In this implementation :math:`E` is always applied to a vector wiht
+    its inverse : :math:`E^{-1}`.
     When initialized it performs an LU decomposition to accelerate the performances
     of the inversion.
 
@@ -427,16 +431,16 @@ class CoarseLO(lp.LinearOperator):
     - ``Z`` : {np.matrix}
             deflation matrix;
     - ``A`` : {SparseLO}
-            to  compute vectors ``A*Z_i``;
+            to  compute vectors :math:`A*Z_i`;
     - ``r`` :  {int}
-            ``rank(Z)``, dimension of the deflation subspace.
+            :math:`rank(Z)`, dimension of the deflation subspace.
     """
 
     def mult(self,v):
         """
-        Perform the multiplication of the inverse coarse operator ``x=E^{-1} v``.
-        It exploits the LU decomposition of ``E`` to solve the system ``Ex=v``.
-        It first solves ``y=L^{-1} v`` and then ``x=U^{-1}y``.
+        Perform the multiplication of the inverse coarse operator :math:`x=E^{-1} v`.
+        It exploits the LU decomposition of :math:`E` to solve the system :math:`Ex=v`.
+        It first solves :math:`y=L^{-1} v` and then :math:`x=U^{-1}y`.
         """
         y=solve(self.L,v,lower=True,overwrite_b=False )
         x=solve(self.U,y,overwrite_b=True)
@@ -479,8 +483,8 @@ class DeflationLO(lp.LinearOperator):
 
     def mult(self,x):
         """
-        Performs the matrix vector multiplication   ``Z*x``
-        with  ``dim(x) = rank(Z)``.
+        Performs the matrix vector multiplication   :math:`Z x`
+        with  :math:`dim(x) = rank(Z)`.
 
         """
         y=np.zeros(self.nrows)
@@ -491,7 +495,7 @@ class DeflationLO(lp.LinearOperator):
         return y
     def rmult(self,x):
         """
-        Performs the product onto a ``N_pix`` vector with ``Z^T``.
+        Performs the product onto a ``N_pix`` vector with :math:`Z^T`.
 
         """
         return np.array( [scalprod(i,x) for i in self.z] )

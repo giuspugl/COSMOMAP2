@@ -16,7 +16,9 @@ def profile_run():
 def output_profile(pr):
     """
     Output of the profiling with ``profile_run``.
+
     **Parameter**
+
     - ``pr``:
         returned by ``profile_run``
 
@@ -51,8 +53,9 @@ def angles_gen(theta0,n,sample_freq=200. ,whwp_freq=2.5):
 
 def pairs_gen(nrows,ncols,pol=1):
     """
-    Generate random ``int``s  to fill the pointing matrix for observed pixels.
+    Generate random ``int`` numbers   to fill the pointing matrix for observed pixels.
     Implemented even for polarization runs.
+
     """
     if ncols<3:
         raise RuntimeError("Not enough pixels!\n Please set Npix >=3, you have set Npix=%d"%ncols)
@@ -91,6 +94,7 @@ def noise_val(nb,bandwidth=1):
     matrix with a  random ditribution ``N_tt'=<n_t n_t'>``.
 
     **Parameters**
+
     - ``nb`` : {int}
         number of noise stationary intervals,
         i.e. number  of blocks in N_tt'.
@@ -106,6 +110,7 @@ def noise_val(nb,bandwidth=1):
         ``shape=(nb,bandwidth)``
     - ``diag`` : {list }, ``size = nb``
         diagonal values of each block .
+
     """
     diag=[]
     t=[]
@@ -120,16 +125,18 @@ def system_setup(nt,npix,nb,pol=1):
     Setup the linear system
 
     **Returns**
-    - d :{array}
+
+    - ``d`` :{array}
         a ``nt`` array of random numbers;
-    - pairs: {list of tuples}
-        the (i,j) non-null indices of the pointing matrix;
+    - ``pairs``: {array }
+        the non-null indices of the pointing matrix;
     - phi :{array}
         angles if ``pol=3``
     - t,diag :  {outputs of ``noise_val``}
         noise values to construct the noise covariance matrix
     - x : {array}
-        the initial solution .
+        the initial solution.
+
     """
     d=np.random.random(nt)
     pairs=pairs_gen(nt,npix,pol)
