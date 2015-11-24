@@ -8,15 +8,18 @@ from utilities import *
 
 class SparseLO(lp.LinearOperator):
     """
-    Derived class from the one from the  ``LinearOperator`` in ``linop``.
+    Derived class from the one from the  :class:`LinearOperator` in :mod:`linop`.
     It constitutes an interface for dealing with the projection operator.
 
     Since this can be represented as a sparse matrix, it is initialized \
     by passing an array of observed pixels which resembles the  ``(i,j)`` positions \
     of the non-null elements of  the matrix.
 
-    During its initialization,  a private member function ``initializeweights`` is called
-    to precompute quite remarkable quantities required to get the solution.
+    .. note::
+
+        During its initialization,  a private member function :func:`initializeweights` is called
+        to precompute arrays which are  related to the scanning strategy and the angles, to the
+        :class:`interfaces.BlockDiagonalPreconditionerLO`.
 
 
     **Parameters**
@@ -67,16 +70,18 @@ class SparseLO(lp.LinearOperator):
         """
         Performs the product of a sparse matrix :math:`Av`,\
         with ``v`` a  ``numpy`` dense vector containing the three Stokes [IQU].
-        Compared to the operation ``mult`` this routine returns a TOD like vector,
-        defined as:
 
-        .. math::
+        .. note::
+            Compared to the operation ``mult`` this routine returns a TOD like vector,
+            defined as:
 
-            d_t= I_p + Q_p \cos(2\phi_t)+ U_p \sin(2\phi_t).
+            .. math::
+
+                d_t= I_p + Q_p \cos(2\phi_t)+ U_p \sin(2\phi_t).
 
 
-        with :math:`p` is the pixel observed at time :math:`t` with polarization angle
-        :math:`\phi_t`.
+            with :math:`p` is the pixel observed at time :math:`t` with polarization angle
+            :math:`\phi_t`.
 
         """
         x=np.zeros(self.nrows)
@@ -110,17 +115,35 @@ class SparseLO(lp.LinearOperator):
         """
 
         Pre-compute the quantitities needed in the explicit
-        implementation of :math:`(P^T P)^{-1}`:
+        implementation of :math:`(P^T P)`:
+
+        **Parameters**
 
         - ``counts`` :
             how many times a given pixel is observed in the timestream;
         - ``mask``:
-          mask from  either unobserved pixels  or   bad constrained (:math:`k >10^3`, with :math:`k` being
-          the condition number of the Pointing matrix block for  the  polarization case) ;
+          mask from  either unobserved pixels (``counts=0``)  or   bad constrained
+          (see the ``pol==3`` following case) ;
+        - [IF  ``pol==3``]:  :math:`\cos^2 2 \phi,\sin^2 2 \phi,\sin2 \phi\cos 2 \phi`
+            the matrix :math:`(A^T A)`  is a sparse-block components are :
 
-        [IF  ``pol==3``]: it precomputes all the goniometric functions
-        involving the angle :math:`phi`, the determinant, the trace,
-        the eigenvalues  of each block of :math:`P`.
+            .. csv-table::
+
+                    ":math:`n_{hits}`", ":math:`0`", ":math:`0`"
+                    ":math:`0`", ":math:`\sum_t cos^2 2 \phi_t`", ":math:`\sum_t sin 2\phi_t cos 2 \phi_t`"
+                    ":math:`0`",  ":math:`\sum_t sin2 \phi_t cos 2 \phi_t`",   ":math:`\sum_t sin^2 2 \phi_t`"
+
+            the determinant, the trace are therefore needed to compute the  eigenvalues
+            of each block via the formula:
+
+            .. math::
+
+                \lambda_{min,max}= Tr(M)/2 \pm \sqrt{Tr^2(M)/4 - det(M)}
+
+            being :math:`M` a ``2x2`` matrix.
+            The eigenvalues are needed to define the mask of bad constrained pixels whose
+            condition number is :math:`\gg 1`.
+
         """
         self.counts=np.zeros(self.ncols)
         #for i,j in np.ndenumerate(self.pairs):
@@ -156,7 +179,7 @@ class SparseLO(lp.LinearOperator):
             lambda_min=tr/2. - sqrt
 
             cond_num=np.abs(lambda_max/lambda_min)
-            mask=np.where(cond_num<=1.e2)[0]
+            mask=np.where(cond_num<=1.e3)[0]
 
             self.cos2[mask]/=det[mask]
             self.sin2[mask]/=det[mask]
@@ -255,14 +278,14 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
     - ``offdiag`` : {bool}
         it is strictly  related on the way you pass the array ``t``.
 
-        - True : ``t`` is a list of array,\
+        .. note::
 
-                ``shape(t)= [nblocks,bandsize]``.
-                In general ```bandsize!=blocksize`` in order
-                to have a Toeplitz band diagonal operator.
+            - True : ``t`` is a list of array,\
+                    ``shape(t)= [nblocks,bandsize]``.
+                    In general ```bandsize!=blocksize`` in order
+                    to have a Toeplitz band diagonal operator.
 
-        - False : ``t`` is a list with values that will define the diagonal operator.\
-
+            - False : ``t`` is a list with values that will define the diagonal operator.\
                     ``shape(t)=[nblocks]``.
                     Here for our convenience we consider
                     the diagonal of each block having the same ``double`` number.
@@ -301,7 +324,36 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
 
 
 class BlockDiagonalPreconditionerLO(lp.LinearOperator):
+    """
+    Linear Operator defined as:
+
+    .. math::
+
+        M_{BD}=( A \, diag(N^{-1}) A^T)^{-1}
+
+    where :math:`A` is a :class:`interfaces.SparseLO` operator.
+    Such inverse action could be easily computed given the structure of the
+    matrix :math:`A`, (sparse if `pol=1`, block-sparse if `pol=3`).
+
+    **Parameters**
+
+    - ``counts``: {array}
+        member of SparseLO,  given a pixel-id it returns the :math:`n_{hits}`
+    - ``masks``:{array}
+        masking the bad or unobserved pixels, member of :class:`interfaces.SparseLO`;
+    - ``n``:{int}
+        the size of the problem, ``npix``;
+    - ``sin2, cos2,sincos``: {arrays}
+        are members of SparseLO and they refer to the trigoniometric functions of :math:`\phi_t`.
+
+
+    """
+
     def mult(self,x):
+        """
+        Action of :math:`y=( A \, diag(N^{-1}) A^T)^{-1} x`.
+
+        """
         y=x*0.
         if self.pol==1:
             y[self.mask]=x[self.mask]/self.counts[self.mask]
@@ -431,7 +483,7 @@ class CoarseLO(lp.LinearOperator):
     - ``Z`` : {np.matrix}
             deflation matrix;
     - ``A`` : {SparseLO}
-            to  compute vectors :math:`A*Z_i`;
+            to  compute vectors :math:`AZ_i`;
     - ``r`` :  {int}
             :math:`rank(Z)`, dimension of the deflation subspace.
     """

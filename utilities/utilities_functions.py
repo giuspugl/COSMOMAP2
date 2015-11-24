@@ -7,7 +7,7 @@ import math as m
 
 def profile_run():
     """
-    Profile the execution with ``cProfile``
+    Profile the execution with :mod:`cProfile`
     """
     import cProfile
     pr=cProfile.Profile()
@@ -15,12 +15,12 @@ def profile_run():
 
 def output_profile(pr):
     """
-    Output of the profiling with ``profile_run``.
+    Output of the profiling with :func:`profile_run`.
 
     **Parameter**
 
     - ``pr``:
-        returned by ``profile_run``
+        instance returned by :func:`profile_run`
 
     """
     import pstats,StringIO
@@ -91,7 +91,7 @@ def checking_output(info):
 def noise_val(nb,bandwidth=1):
     """
     Generate  elements to fill the  noise covariance
-    matrix with a  random ditribution ``N_tt'=<n_t n_t'>``.
+    matrix with a  random ditribution :math:`N_{tt}= < n_t n_t >`.
 
     **Parameters**
 
@@ -99,10 +99,10 @@ def noise_val(nb,bandwidth=1):
         number of noise stationary intervals,
         i.e. number  of blocks in N_tt'.
     - ``bandwidth`` : {int}
-        the width of the diagonal band.
-        e.g. :
-        -   ``bandwidth=1`` define the first up and low diagonal terms.
-        -   ``bandwidth=2`` 2 off diagonal terms.
+        the width of the diagonal band,e.g. :
+
+        - ``bandwidth=1`` define the first up and low diagonal terms
+        - ``bandwidth=2`` 2 off diagonal terms.
 
     **Returns**
 
@@ -132,10 +132,8 @@ def system_setup(nt,npix,nb,pol=1):
         the non-null indices of the pointing matrix;
     - phi :{array}
         angles if ``pol=3``
-    - t,diag :  {outputs of ``noise_val``}
+    - t,diag :  {outputs of :func:`noise_val`}
         noise values to construct the noise covariance matrix
-    - x : {array}
-        the initial solution.
 
     """
     d=np.random.random(nt)

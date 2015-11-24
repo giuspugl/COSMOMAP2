@@ -8,11 +8,13 @@ def arnoldi(A, b, x0=None, tol=1e-5, maxiter=1000, inner_m=30 ):
     (Ritz eigenvalues) and eigenvector.
 
     The basis comes from a Gram-Schmidt orthonormalization of the Krylov
-    subspace  defined as :
+    subspace  defined as:
 
-    ``K_m = span{b, Ab, ..., A^{m-1} b }``
+    .. math::
 
-    at the ``m``-th iteration.
+        K_m = span( b, Ab, ..., A^{m-1} b )
+
+    at the :math:`m`-th iteration.
 
     **Parameters**
 
@@ -29,15 +31,18 @@ def arnoldi(A, b, x0=None, tol=1e-5, maxiter=1000, inner_m=30 ):
             eigenvalues, to seek the stability of the algorithm;
     - ``inner_m`` :  {int}
             maximum number of iterations within the Arnoldi algorithm,
-            (``inner_m <=N_pix``).
+
+            .. Warning::
+
+                ``inner_m <=N_pix``
 
     **Returns**
 
     - ``w`` : {list of arrays}
             the orthonormal basis ``m x N_pix``;
     - ``h`` : {list of arrays}
-            the elements of the ``H_m`` Hessenberg matrix.
-            At the ``m``-th iteration  ``h_m`` has got ``m+1`` elements.
+            the elements of the :math:`H_m` Hessenberg matrix.
+            At the ``m``-th iteration  :math:`h_m` has got :math:`m+1` elements.
 
     """
     if not np.isfinite(b).all():
@@ -102,7 +107,7 @@ def arnoldi(A, b, x0=None, tol=1e-5, maxiter=1000, inner_m=30 ):
 
 def build_hess(h,m):
     """
-    Compute  and store (as a Hessenberg matrix) the ``H_m`` matrix from the
+    Compute  and store (as a Hessenberg matrix) the :math:`H_m` matrix from the
     output list ``h`` of the ``arnoldi`` routine.
 
     **Parameters**
@@ -127,16 +132,16 @@ def build_hess(h,m):
 
 def build_Z(z,y,w,eps):
     """
-    Build the deflation matrix ``Z``. Its columns are the ``r``
-    selected eigenvectors ``Z_i=w_m*y_i`` s.t. their eigenvalues  ``z_i``
+    Build the deflation matrix :math:`Z`. Its columns are the :math:`r`
+    selected eigenvectors :math:`Z_i=w_m*y_i` s.t. their eigenvalues  :math:`z_i`
     are smaller than a certain threshold ``eps``.
 
     **Parameters**
 
     - ``z`` : {array}
-        eigenvalues of ``H_m``;
+        eigenvalues of :math:`H_m`;
     - ``y`` : {list of arrays}
-        eigenvectors of ``H_m``;
+        eigenvectors of :math:`H_m`;
     - ``w`` : {list of arrays}
         orthonormal basis (computed with the Arnoldi algorithm);
     - ``eps`` : {float}
@@ -148,7 +153,7 @@ def build_Z(z,y,w,eps):
     - ``Z`` : {matrix}
             deflation subspace matrix;
     - ``r`` :  {int}
-            ``rank(Z)``.
+            :math:`rank(Z)`.
 
     """
 
