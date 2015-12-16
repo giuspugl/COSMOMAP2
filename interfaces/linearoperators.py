@@ -111,7 +111,7 @@ class SparseLO(lp.LinearOperator):
             x[2+3*j]+=v[i]*self.sin[i]
             i+=1
         return x
-    def initializeweights(self,phi):
+    def initializeweights(self,phi,w):
         """
 
         Pre-compute the quantitities needed in the explicit
@@ -148,9 +148,10 @@ class SparseLO(lp.LinearOperator):
         self.counts=np.zeros(self.ncols)
         #for i,j in np.ndenumerate(self.pairs):
         if self.pol==1:
+            i=0
             for j in self.pairs:
-                self.counts[j]+=1.
-
+                self.counts[j]+=w[i]
+                i+=1
             self.mask=np.where(self.counts !=0)[0]
 
         if self.pol==3:
@@ -160,14 +161,14 @@ class SparseLO(lp.LinearOperator):
             self.cos2=np.zeros(self.ncols)
             self.sin2=np.zeros(self.ncols)
             self.sincos=np.zeros(self.ncols)
-            #for i,j in np.ndenumerate(self.pairs):
+
             i=0
             for j in self.pairs:
-                self.counts[j]+=1.
+                self.counts[j]+=w[i]
 
-                self.cos2[j]+=self.cos[i]*self.cos[i]
-                self.sin2[j]+=self.sin[i]*self.sin[i]
-                self.sincos[j]+=self.cos[i]*self.sin[i]
+                self.cos2[j]+=w[i]*self.cos[i]*self.cos[i]
+                self.sin2[j]+=w[i]*self.sin[i]*self.sin[i]
+                self.sincos[j]+=w[i]*self.cos[i]*self.sin[i]
                 i+=1
 
             det=(self.cos2*self.sin2)-(self.sincos*self.sincos)
@@ -187,12 +188,14 @@ class SparseLO(lp.LinearOperator):
             self.mask=mask
 
 
-    def __init__(self,n,m,obs_pixs,phi=None,pol=1):
+    def __init__(self,n,m,obs_pixs,phi=None,pol=1,w=None):
+        if w==None:
+            w=np.ones(m)
         self.ncols=n
         self.pol=pol
         self.nrows=m
         self.pairs=obs_pixs
-        self.initializeweights(phi)
+        self.initializeweights(phi,w)
         if pol==3:
             self.__polarization='IQU'
             super(SparseLO, self).__init__(nargin=pol*n,nargout=m, matvec=self.mult_iqu,
@@ -264,7 +267,7 @@ class ToeplitzLO(lp.LinearOperator):
 
 class BlockLO(blk.BlockDiagonalLinearOperator):
     """
-    Derived class from the one in ``blkop`` module.
+    Derived class from the one in :mod:`blkop` module.
     It basically relies on the definition of a block diagonal operator,
     composed by ``nblocks`` diagonal operators.
     Each of them is a multiple  of the `Identity`` characterized by the ``nblocks`` values listed in ``t``.
@@ -288,7 +291,7 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
             - False : ``t`` is a list with values that will define the diagonal operator.\
                     ``shape(t)=[nblocks]``.
                     Here for our convenience we consider
-                    the diagonal of each block having the same ``double`` number.
+                    the diagonal of each block having the same ``double`` value.
 
     """
     def build_blocks(self):
@@ -351,10 +354,11 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
 
     def mult(self,x):
         """
-        Action of :math:`y=( A \, diag(N^{-1}) A^T)^{-1} x`.
-
+        Action of :math:`y=( A \, diag(N^{-1}) A^T)^{-1} x`,
+        where :math:`x` is   an :math:`n_{pix}` array.
         """
         y=x*0.
+
         if self.pol==1:
             y[self.mask]=x[self.mask]/self.counts[self.mask]
         elif self.pol==3:
@@ -368,11 +372,12 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
 
         return y
 
-    def __init__(self,counts,mask,n,pol=1,sin2=None,cos2=None,sincos=None):
+    def __init__(self,counts,mask,n,pol=1,sin2=None,cos2=None,sincos=None,noisediag=None):
         self.counts=counts
         self.size=pol*n
         self.mask=mask
         self.pol=pol
+
         if pol==3:
             self.sin2=sin2
             self.cos2=cos2

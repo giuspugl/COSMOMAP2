@@ -28,10 +28,7 @@ def  obspix2mask(obspix,pixs,nside,fname,write=False):
     mask[obspix[pixs]]=1.
     if write:
         hp.write_map(fname,mask)
-    #else:
-        #mask=hp.read_map(fname)
-        #hp.mollview(mask)
-        #plt.show()
+
     return mask
 
 def reorganize_map(mapin,obspix,npix,nside,pol,fname,write=False):
@@ -67,7 +64,7 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname,write=False):
         healpix_map=np.zeros(healpix_npix*pol).reshape((healpix_npix,pol))
         i=mapin[np.arange(0,npix*3,3)]
         q,u=mapin[np.arange(1,npix*3,3)],mapin[np.arange(2,npix*3,3)]
-        #print i.shape,healpix_map[obspix,0].shape
+
         m=np.where(q!=0.)[0]
         healpix_map[obspix,0]=i
         healpix_map[obspix,1]=q
@@ -76,19 +73,17 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname,write=False):
 
     elif pol==1:
         healpix_map=np.zeros(healpix_npix)
-        print healpix_map.shape
+
         healpix_map[obspix]=mapin
         hp_list=[healpix_map]
     if write:
         hp.write_map(fname,hp_list)
 
-
-
     return hp_list
 
 def compare_maps(outm,inm,pol,coords,mask):
+    #inm*=mask
     if pol==1:
-        #   inm*=mask
         maxval=max(inm)
         minval=min(inm)
 
@@ -114,7 +109,9 @@ def compare_maps(outm,inm,pol,coords,mask):
         hp.graticule(dpar=5,dmer=5,local=True)
         hp.gnomview(outm[2],rot=coords,xsize=600,min=minval,max=maxval,title='U output map',sub=235)
         hp.graticule(dpar=5,dmer=5,local=True)
-        hp.gnomview(inm[2]-outm[2],rot=coords,xsize=600,min=minval,max=maxval,title='U diff',sub=236)
+        #hp.gnomview(inm[2]-outm[2],rot=coords,xsize=600,min=minval,max=maxval,title='U diff',sub=236)
+        hp.gnomview(inm[2]-outm[2],rot=coords,xsize=600,title='U diff',sub=236)
+
         hp.graticule(dpar=5,dmer=5,local=True)
 
     plt.show()

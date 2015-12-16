@@ -43,6 +43,9 @@ def test_coarse_operator():
         y=E*v
 
         y2= la.solve(E.L.dot(E.U),v)
-        assert  np.allclose(y2,y)
+        if (y2.dtype=='float64' ):
+            assert  np.allclose(y2,y)
+        elif (y2.dtype=='complex128' ):
+            assert np.allclose(y2.real,y)
 
 test_coarse_operator()

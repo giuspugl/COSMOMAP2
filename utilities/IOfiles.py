@@ -26,9 +26,10 @@ def read_from_data(filename,pol):
     n_bolo_pair=f['n_bolo_pair'][...]
     n_ces=f['n_sample_ces'][...]
     print "Bolo Pairs: %d \t CES: %d "%(n_bolo_pair,n_ces)
-
+    """
     group=f['bolo_pair_0']
     pixs=group['pixel'][...]
+    ground=group['ground'][...]
     polang=group['pol_angle'][...]
     if pol== 1:
         d=group['sum'][...]
@@ -37,31 +38,53 @@ def read_from_data(filename,pol):
         d=group['dif'][...]
         weight=group['weight_dif'][...]
         #polang+=np.pi/2.
-
+    """
     #for i in range(n_bolo_pair):
-    for i in range(1,5):
+    """for i in range(1,5):
         group=f['bolo_pair_'+str(i)]
 
-        pixs_pair=group['pixel'][...]
-        pixs=np.append(pixs,pixs_pair)
-        polang_pair=group['pol_angle'][...]
+    pixs_pair=group['pixel'][...]
+    pixs=np.append(pixs,pixs_pair)
+    polang_pair=group['pol_angle'][...]
+    if pol== 1:
+        d_pair=group['sum'][...]
+        d=np.append(d,d_pair)
+        weight_pair=group['weight_sum'][...]
+        weight=np.append(weight,weight_pair)
+    elif pol==3:
+        d_pair=group['dif'][...]
+        d=np.append(d,d_pair)
+        weight_pair=group['weight_dif'][...]
+        weight=np.append(weight,weight_pair)
+
+        #polang_pair+=np.pi/2.
+    polang=np.append(polang,polang_pair)
+    """
+    pixs_pair=[]
+    polang_pair=[]
+    d_pair=[]
+    weight_pair=[]
+    ground_pair=[]
+    for i in range(5):
+        group=f['bolo_pair_'+str(i)]
+        pixs_pair.append(group['pixel'][...])
+        polang_pair.append(group['pol_angle'][...])
+        ground_pair.append(group['ground'][...])
         if pol== 1:
-            d_pair=group['sum'][...]
-            d=np.append(d,d_pair)
-            weight_pair=group['weight_sum'][...]
-            weight=np.append(weight,weight_pair)
+            d_pair.append(group['sum'][...])
+            weight_pair.append(group['weight_sum'][...])
         elif pol==3:
-            d_pair=group['dif'][...]
-            d=np.append(d,d_pair)
-            weight_pair=group['weight_dif'][...]
-            weight=np.append(weight,weight_pair)
-
-            #polang_pair+=np.pi/2.
-        polang=np.append(polang,polang_pair)
-
+            d_pair.append(group['dif'][...])
+            weight_pair.append(group['weight_dif'][...])
     f.close()
 
-    return d,weight,polang,pixs,hp_pixs
+    d=np.concatenate(d_pair)
+    weight=np.array(weight_pair)
+    polang=np.concatenate(polang_pair)
+    pixs=np.concatenate(pixs_pair)
+    ground=np.concatenate(ground_pair)
+
+    return d,weight,polang,pixs,hp_pixs,ground,n_ces
 
 
 def write_to_hdf5(filename,obs_pixels,noise_values,d,phi=None):
