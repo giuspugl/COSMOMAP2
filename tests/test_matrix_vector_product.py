@@ -14,19 +14,19 @@ def test_matrix_vector_product():
         for npix in xrange(5,nt ):
             x=np.ones(pol*npix)
             pairs=pairs_gen(nt,npix,pol=pol)
-            print "obs_pixs\t",pairs
+            #print "obs_pixs\t",pairs
             P=SparseLO(npix,nt,pairs,phi,pol=pol)
 
             y=P*x
-            print "A*x\n",y
+            #print "A*x\n",y
 
 
             y2=[x[j] for j in pairs]
             assert np.allclose(y,y2)
-def test_block_prec():
+def test_explicit_implementation_blockdiagonal_preconditioner():
     """
     test  the inverse matrix ``(A^T*A)^-1``. Whose action when applied on a vector
-    is explicitly implemented through the derived class ``BlockDiagonalPreconditionerLO``
+    is explicitly implemented through the derived  :class:`BlockDiagonalPreconditionerLO`.
 
     """
 
@@ -68,4 +68,4 @@ def test_block_prec():
 
 
 test_matrix_vector_product()
-test_block_prec()
+test_explicit_implementation_blockdiagonal_preconditioner()

@@ -5,7 +5,7 @@ import numpy as np
 
 def test_coarse_operator():
     """
-    Build and test the coarse operator E.
+    Build and test the :class:`CoarseLO`.
     """
     for pol in [1,3]:
 
@@ -32,13 +32,17 @@ def test_coarse_operator():
         H=build_hess(h,m)
 
         z,y=la.eig(H,check_finite=False)
-        eps=.1*abs(max(z))
+        total_energy=np.sqrt(sum(abs(z)**2))
+        eps= .2 * total_energy
+
+#        eps=.1*abs(max(z))
         Z,r= build_Z(z,y, w, eps)
-
+        Zd=DeflationLO(Z)
         # Build Coarse operator
-
-        E=CoarseLO(Z,A,r)
-
+        Az=Z*0.
+        for i in xrange(r):
+            Az[:,i]=A*Z[:,i]
+        E=CoarseLO(Z,Az,r)
         v=np.ones(r)
         y=E*v
 

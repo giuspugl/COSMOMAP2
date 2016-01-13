@@ -108,7 +108,7 @@ def arnoldi(A, b, x0=None, tol=1e-5, maxiter=1000, inner_m=30 ):
 def build_hess(h,m):
     """
     Compute  and store (as a Hessenberg matrix) the :math:`H_m` matrix from the
-    output list ``h`` of the ``arnoldi`` routine.
+    output list ``h`` of the :func:`arnoldi` routine.
 
     **Parameters**
 
@@ -171,16 +171,5 @@ def build_Z(z,y,w,eps):
     print "++++++++++++++++++++++++++++++++++++"
     print "Found  eigenvectors below the threshold %.1g!\nThe deflation subspace  has dim(Z)=%d "%(eps,r)
     print "++++++++++++++++++++++++++++++++++++"
-    #s=np.asarray(select_eigvec,order='F')
     Z=dgemm(w,select_eigvec)
-
-    """
-    Z1=[]
-    for  s in select_eigvec:
-        summ=np.zeros(npix)
-        for i in xrange(m):
-            summ+=w[i]*s[i]
-        Z1.append(summ)
-    print Z1,"\n",Z
-    """
     return Z,r

@@ -66,7 +66,7 @@ def test_block_diagonal_preconditioner_pol():
                 assert checking_output(info)
                 assert np.allclose(vec,y)
 
-def test_block_diag_precond_action():
+def test_block_diagonal_precond_action_as_inverse_operator():
     """
     check the action of the block diag preconditioner
 
@@ -96,11 +96,36 @@ def test_block_diag_precond_action():
     M_bd=InverseLO(A,method=spla.cg)
     vec=M_bd*b
     assert checking_output(M_bd.converged)
-    print vec,x0
+    #print vec,x0
     assert  np.allclose(vec,x0,atol=1.e-3)
+
+def test_SPD_properties_block_diagonal_preconditioner():
+    """
+    to converge the  conjugate gradient the preconditioner has to be
+    Symmetric Positive Definite.
+    """
+    # input  from file, nt and np fixed
+    npix,pol=15,3
+    d,pairs,phi,weight=read_from_hdf5('data/testcase_block_diag_4.hdf5')
+    nt,nb=len(d),len(weight)
+
+    #construct the block diagonal operator
+
+    blocksize=nt/nb
+    N=BlockLO(blocksize,weight,offdiag=False)
+    P=SparseLO(npix,nt,pairs,phi,pol=pol,w=N.diag)
+    randarray=np.random.rand(pol*npix)
+    A=P.T*N*P
+    assert  np.allclose(A*randarray, A.T *randarray)
+    assert scalprod(randarray,A*randarray)>0.
+
+    Mbd=BlockDiagonalPreconditionerLO(P.counts,P.mask,npix,pol,P.sin2,P.cos2,P.sincos)
+    assert  np.allclose(Mbd*randarray, Mbd.T *randarray)
+    assert scalprod(randarray,Mbd*randarray)>0.
 
 
 
 test_block_diagonal_preconditioner()
 test_block_diagonal_preconditioner_pol()
-test_block_diag_precond_action()
+test_block_diagonal_precond_action_as_inverse_operator()
+test_SPD_properties_block_diagonal_preconditioner()

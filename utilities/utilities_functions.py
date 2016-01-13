@@ -119,6 +119,16 @@ def noise_val(nb,bandwidth=1):
     diag=[i[0] for i in t]
     return  t, diag
 
+def subscan_resize(data,subscan):
+    """
+    Resize a tod-size array  by considering only the subscan intervals.
+    """
+    tmp=[]
+    for i in xrange(len(subscan[0])):
+        start=(subscan[1][i])
+        end=subscan[1][i] + subscan[0][i]
+        tmp.append(data[start:end])
+    return np.concatenate(tmp)
 
 def system_setup(nt,npix,nb,pol=1):
     """

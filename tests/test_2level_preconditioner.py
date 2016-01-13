@@ -29,11 +29,18 @@ def test_2level_preconditioner():
     m=len(w)
     H=build_hess(h,m)
     z,y=la.eig(H,check_finite=False)
-    eps=.1*abs(max(z))
+    total_energy=np.sqrt(sum(abs(z)**2))
+    eps= .2 * total_energy
+
+    #eps=.1*abs(max(z))
     Z,r= build_Z(z,y, w, eps)
-    Zd=DeflationLO(Z)
     # Build Coarse operator
-    E=CoarseLO(Z,A,r)
+    Az=Z*0.
+    for i in xrange(r):
+        Az[:,i]=A*Z[:,i]
+    E=CoarseLO(Z,Az,r)
+
+    Zd=DeflationLO(Z)
     #Build the 2-level preconditioner
     I= lp.IdentityOperator(pol*npix)
 
@@ -56,13 +63,12 @@ def test_2level_preconditioner():
 def test_2level_preconditioner_pol():
     """
     Build and test the expected algebraic properties
-    of  the M2 level preconditioner on a polarization map case. 
+    of  the M2 level preconditioner on a polarization map case.
     """
-    nt,npix,nb,pol= 100,10,2,3
+    nt,npix,nb,pol= 100,40,2,3
     blocksize=nt/nb
     d,pairs,phi,t,diag=system_setup(nt,npix,nb,pol)
     x0=np.zeros(pol*npix)
-
     P=SparseLO(npix,nt,pairs,phi,pol)
     N=BlockLO(blocksize,t,offdiag=True)
     diagN=BlockLO(blocksize,diag,offdiag=False)
@@ -78,12 +84,20 @@ def test_2level_preconditioner_pol():
     m=len(w)
     H=build_hess(h,m)
     z,y=la.eig(H,check_finite=False)
-    eps=.1*abs(max(z))
+    total_energy=np.sqrt(sum(abs(z)**2))
+    eps= .2 * total_energy
+
+#    eps=.1*abs(max(z))
 
     Z,r= build_Z(z,y, w, eps)
+
     Zd=DeflationLO(Z)
     # Build Coarse operator
-    E=CoarseLO(Z,A,r)
+    Az=Z*0.
+    for i in xrange(r):
+        Az[:,i]=A*Z[:,i]
+    E=CoarseLO(Z,Az,r)
+
     #Build the 2-level preconditioner
     I= lp.IdentityOperator(pol*npix)
 
@@ -92,7 +106,6 @@ def test_2level_preconditioner_pol():
     AZ=[]
     for i in Zd.z:
         AZ.append(A*i)
-
     for i in range(r):
         assert (np.allclose(M2*AZ[i],Zd.z[i]) and norm2(R*AZ[i])<=1.e-10)
 
