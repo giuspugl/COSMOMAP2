@@ -75,7 +75,6 @@ class SparseLO(lp.LinearOperator):
 
         """
         x=np.zeros(self.nrows)
-
         for i,j in np.ndenumerate(self.pairs):
             x[i]+=v[j]
 
@@ -91,6 +90,21 @@ class SparseLO(lp.LinearOperator):
             x[j]+=v[i]
 
         return x
+    def mult_qu(self,v):
+
+        x=np.zeros(self.nrows)
+        indices=np.arange(self.nrows,dtype='int32')
+        for index,pix,cos,sin in zip(indices,self.pairs,self.cos,self.sin):
+            x[index]+=v[2*pix]*cos+v[2*pix+1]*sin
+        return x
+
+    def rmult_qu(self,v):
+
+        vec_out=np.zeros(self.ncols*self.pol)
+        for vec_in,pix,cos,sin in zip(v,self.pairs,self.cos,self.sin):
+            vec_out[2*pix]+=vec_in* cos
+            vec_out[1+2*pix]+=vec_in*sin
+        return vec_out
 
 
     def mult_iqu(self,v):
@@ -112,12 +126,10 @@ class SparseLO(lp.LinearOperator):
 
         """
         x=np.zeros(self.nrows)
-        i=0
-        #for i,j in np.ndenumerate(self.pairs):
-        for j in self.pairs:
-
-            x[i]+=v[3*j]+v[3*j+1]*self.cos[i]+v[3*j+2]*self.sin[i]
-            i+=1
+        indices=np.arange(self.nrows,dtype='int32')
+        for i,pix,cos,sin in zip(indices,self.pairs,self.cos,self.sin):
+        #x[i]+=v[3*pix+1]*self.cos[i]+v[3*pix+2]*self.sin[i]
+            x[i]+=v[3*pix]+v[3*pix+1]*cos + v[3*pix+2]*sin
 
         return x
 
@@ -129,14 +141,11 @@ class SparseLO(lp.LinearOperator):
 
         """
         x=np.zeros(self.ncols*self.pol)
-        i=0
-        #for i,j in np.ndenumerate(self.pairs):
-        for j in self.pairs:
-            x[3*j]+=v[i]
-
-            x[1+3*j]+=v[i]*self.cos[i]
-            x[2+3*j]+=v[i]*self.sin[i]
-            i+=1
+        zipped_arrs=zip(v,self.pairs,self.cos,self.sin)
+        for vec_in,pix,cos,sin in zip(v,self.pairs,self.cos,self.sin):
+            x[3*pix]+=vec_in
+            x[1+3*pix]+=vec_in*cos
+            x[2+3*pix]+=vec_in*sin
         return x
 
     def initializeweights(self,phi,w):
@@ -173,50 +182,73 @@ class SparseLO(lp.LinearOperator):
             condition number is :math:`\gg 1`.
 
         """
-        self.counts=np.zeros(self.ncols)
         if self.pol==1:
-            i=0
-            for j in self.pairs:
-                self.counts[j]+=w[i]
-                i+=1
+            self.counts=np.zeros(self.ncols)
+            for j,weight in zip(self.pairs,w):
+                self.counts[j]+=weight
             self.mask=np.where(self.counts !=0)[0]
 
-        if self.pol==3:
-
-            self.cos=np.cos(2*phi)
-            self.sin=np.sin(2*phi)
+        if self.pol==2:
+            self.cos=np.cos(2.*phi)
+            self.sin=np.sin(2.*phi)
             self.cos2=np.zeros(self.ncols)
             self.sin2=np.zeros(self.ncols)
             self.sincos=np.zeros(self.ncols)
-
-            i=0
-            for j in self.pairs:
-                self.counts[j]+=w[i]
-
-                self.cos2[j]+=w[i]*self.cos[i]*self.cos[i]
-                self.sin2[j]+=w[i]*self.sin[i]*self.sin[i]
-                self.sincos[j]+=w[i]*self.cos[i]*self.sin[i]
-                i+=1
-
+            for j,weight,cos,sin in zip(self.pairs,w,self.cos,self.sin):
+                self.cos2[j]+=weight*cos*cos
+                self.sin2[j]+=weight*sin*sin
+                self.sincos[j]+=weight*cos*sin
             det=(self.cos2*self.sin2)-(self.sincos*self.sincos)
-
             tr=self.cos2+self.sin2
-
             sqrt=np.sqrt(tr*tr/4. -det)
             lambda_max=tr/2. + sqrt
             lambda_min=tr/2. - sqrt
-
             cond_num=np.abs(lambda_max/lambda_min)
             mask=np.where(cond_num<=1.e3)[0]
-
             self.cos2[mask]/=det[mask]
             self.sin2[mask]/=det[mask]
             self.sincos[mask]/=det[mask]
             self.mask=mask
 
+        if self.pol==3:
+            self.cos=np.cos(2.*phi)
+            self.sin=np.sin(2.*phi)
+            self.counts=np.zeros(self.ncols)
+            self.cosine=np.zeros(self.ncols)
+            self.sine=np.zeros(self.ncols)
+            self.cos2=np.zeros(self.ncols)
+            self.sin2=np.zeros(self.ncols)
+            self.sincos=np.zeros(self.ncols)
+            for pix,weight,cos,sin in zip(self.pairs,w,self.cos,self.sin):
+                self.counts[pix]+=weight
+                self.cosine[pix]+=weight*cos
+                self.sine[pix]+=weight*sin
+                self.cos2[pix]+=weight*cos*cos
+                self.sin2[pix]+=weight*sin*sin
+                self.sincos[pix]+=weight*sin*cos
+
+            det_block=(self.cos2*self.sin2)-(self.sincos*self.sincos)
+            Tr_block=self.cos2+self.sin2
+            sqrt=np.sqrt(Tr_block*Tr_block/4. -det_block)
+            lambda_max=Tr_block/2. + sqrt
+            lambda_min=Tr_block/2. - sqrt
+            cond_num=np.abs(lambda_max/lambda_min)
+            mask1=np.where(self.counts>2)[0]
+            mask=np.where(cond_num<=1.e3 )[0]
+            #print len(mask),len(mask1)
+            #print mask,mask1
+            self.mask=np.intersect1d(mask1,mask)
+            #for j in self.pairs:
+            #    self.counts[j]+=w[i]
+
+            #    self.cos2[j]+=w[i]*self.cos[i]*self.cos[i]
+            #    self.sin2[j]+=w[i]*self.sin[i]*self.sin[i]
+            #    self.sincos[j]+=w[i]*self.cos[i]*self.sin[i]
+
+
 
     def __init__(self,n,m,obs_pixs,phi=None,pol=1,w=None):
-        if w==None:
+        if w is None:
             w=np.ones(m)
 
         self.ncols=n
@@ -224,14 +256,19 @@ class SparseLO(lp.LinearOperator):
         self.nrows=m
         self.pairs=obs_pixs
         self.initializeweights(phi,w)
+
         if pol==3:
             self.__runcase='IQU'
             super(SparseLO, self).__init__(nargin=pol*n,nargout=m, matvec=self.mult_iqu,
-                                                symmetric=False, rmatvec=self.rmult_iqu )
+                                            symmetric=False, rmatvec=self.rmult_iqu )
         elif pol==1:
             self.__runcase='I'
             super(SparseLO, self).__init__(nargin=n,nargout=m, matvec=self.mult,
                                                 symmetric=False, rmatvec=self.rmult )
+        elif pol==2:
+            self.__runcase='QU'
+            super(SparseLO, self).__init__(nargin=pol*n,nargout=m, matvec=self.mult_qu,
+                                                symmetric=False, rmatvec=self.rmult_qu )
         else:
             raise RuntimeError("No valid polarization key set!\t=>\tpol=%d \n \
                                     Possible values are pol=%d(I),%d(IQU)."%(pol,1,3))
@@ -398,13 +435,27 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
         if self.pol==1:
             y[self.mask]=x[self.mask]/self.counts[self.mask]
         elif self.pol==3:
-            m=len(self.mask)
-            for j in xrange(m):
-                i=self.mask[j]
-                y[3*i]=x[3*i]/self.counts[i]
-                qtmp=self.sin2[i]*x[i*3+1]-self.sincos[i]*x[i*3+2]
-                utmp=self.cos2[i]*x[i*3+2]-self.sincos[i]*x[i*3+1]
-                y[i*3+1],y[i*3+2]=qtmp,utmp
+
+            determ=self.counts*(self.cos2*self.sin2 - self.sincos*self.sincos)\
+                - self.cos*self.cos*self.sin2 - self.sin*self.sin*self.cos2\
+                +2.*self.cos*self.sin*self.sincos
+
+            for pix,det,s2,c2,cs,c,s,hits in zip(self.mask,determ,self.sin2,self.cos2,self.sincos,\
+                                self.cos,self.sin,self.counts):
+                #a0=np.array([c2*s2-cs*cs, s*cs-c*s2, c*cs-s*c2])
+                #a1=np.array([s*cs-c*s2, hits*s2-s*s, s*c-hits*cs])
+                #a2=np.array([c*cs-s*c2, -hits*cs+s*c, hits*c2-c*c])
+                #y[3*pix]  =scalprod(np.array([c2*s2-cs*cs, s*cs-c*s2, c*cs-s*c2]),x[3*pix:3*pix+3])/det
+                #y[3*pix+1]=scalprod(np.array([s*cs-c*s2, hits*s2-s*s, s*c-hits*cs]),x[3*pix:3*pix+3])/det
+                #y[3*pix+2]=scalprod(np.array([c*cs-s*c2, -hits*cs+s*c, hits*c2-c*c]),x[3*pix:3*pix+3])/det
+                y[3*pix]  =((c2*s2-cs*cs)*x[3*pix]+ (s*cs-c*s2)  *x[3*pix+1]  +( c*cs-s*c2)  *x[3*pix+2])/det
+                y[3*pix+1]=((s*cs-c*s2)  *x[3*pix]+ (hits*s2-s*s)*x[3*pix+1]  +( s*c-hits*cs)*x[3*pix+2])/det
+                y[3*pix+2]=((c*cs -s*c2) *x[3*pix]+(-hits*cs+c*s)*x[3*pix+1]  +(hits*c2-c*c) *x[3*pix+2])/det
+
+        elif self.pol==2:
+            for pix,s2,c2,cs in zip( self.mask,self.sin2,self.cos2,self.sincos):
+                y[pix*2]  =  s2  *x[2*pix] - cs *x[pix*2+1]
+                y[pix*2+1]= -cs  *x[2*pix] + c2 *x[pix*2+1]
 
         return y
 
@@ -414,16 +465,47 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
     #@property
     #def T(self):
     #    return self
-    def __init__(self,counts,mask,n,pol=1,sin2=None,cos2=None,sincos=None,noisediag=None):
-        self.counts=counts
+    #def __init__(self,counts,mask,n,pol=1,sin2=None,\
+    #                cos2=None,sincos=None,cos=None,sin=None):
+    def __init__(self,A,n,pol=1):
+        """
+        if pol==1 :
+            self.counts=counts
+        elif pol==2:
+            self.sin2=sin2[mask]
+            self.cos2=cos2[mask]
+            self.sincos=sincos[mask]
+        elif pol==3:
+            self.counts=counts[mask]
+            self.sin2=sin2[mask]
+            self.cos2=cos2[mask]
+            self.sincos=sincos[mask]
+            self.cos=cos[mask]
+            self.sin=sin[mask]
+
         self.size=pol*n
         self.mask=mask
         self.pol=pol
 
-        if pol==3:
-            self.sin2=sin2
-            self.cos2=cos2
-            self.sincos=sincos
+        """
+
+        self.size=pol*n
+        self.mask=A.mask
+        self.pol=pol
+        if pol==1 :
+            self.counts=A.counts
+        elif pol==2:
+            self.sin2=A.sin2[A.mask]
+            self.cos2=A.cos2[A.mask]
+            self.sincos=A.sincos[A.mask]
+        elif pol==3:
+            self.counts=A.counts[A.mask]
+            self.sin2=A.sin2[A.mask]
+            self.cos2=A.cos2[A.mask]
+            self.sincos=A.sincos[A.mask]
+            self.cos=A.cosine[A.mask]
+            self.sin=A.sine[A.mask]
+
         super(BlockDiagonalPreconditionerLO,self).__init__(nargin=self.size,nargout=self.size,\
                                                             matvec=self.mult, symmetric=True)
 

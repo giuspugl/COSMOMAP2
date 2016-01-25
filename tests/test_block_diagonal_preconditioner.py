@@ -119,7 +119,7 @@ def test_SPD_properties_block_diagonal_preconditioner():
     assert  np.allclose(A*randarray, A.T *randarray)
     assert scalprod(randarray,A*randarray)>0.
 
-    Mbd=BlockDiagonalPreconditionerLO(P.counts,P.mask,npix,pol,P.sin2,P.cos2,P.sincos)
+    Mbd=BlockDiagonalPreconditionerLO(P,npix,pol)
     assert  np.allclose(Mbd*randarray, Mbd.T *randarray)
     assert scalprod(randarray,Mbd*randarray)>0.
 

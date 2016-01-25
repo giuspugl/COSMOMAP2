@@ -26,7 +26,7 @@ def norm2(q):
 
 def scalprod(a,b):
     """
-    Scalar product of two vectors ``a`` and ``b``. 
+    Scalar product of two vectors ``a`` and ``b``.
     """
     dot=get_blas_funcs('dot', (a,b))
     return dot(a,b)

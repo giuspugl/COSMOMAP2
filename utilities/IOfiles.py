@@ -33,7 +33,7 @@ def read_from_data(filename,pol):
     weight_pair=[]
     ground_pair=[]
     #for i in range(n_bolo_pair):
-    for i in range(5):
+    for i in range(10):
         group=f['bolo_pair_'+str(i)]
         pixs_pair.append(group['pixel'][...])
         polang_pair.append(group['pol_angle'][...])
@@ -41,7 +41,7 @@ def read_from_data(filename,pol):
         if pol== 1:
             d_pair.append(group['sum'][...])
             weight_pair.append(group['weight_sum'][...])
-        elif pol==3:
+        elif pol==3 or pol==2:
             d_pair.append(group['dif'][...])
             weight_pair.append(group['weight_dif'][...])
     f.close()
@@ -152,7 +152,7 @@ def write_to_hdf5(filename,obs_pixels,noise_values,d,phi=None):
     pixs=group.create_dataset('pixel',np.shape(obs_pixels), dtype=h5.h5t.STD_I32BE)
     weight=group.create_dataset('weight',np.shape(noise_values),dtype=h5.h5t.IEEE_F64BE)
     det=group.create_dataset('sum',np.shape(d),dtype=h5.h5t.IEEE_F64BE)
-    if phi!=None:
+    if phi is not None:
         polang=group.create_dataset('pol_angle',np.shape(phi), dtype=h5.h5t.IEEE_F64BE)
         polang[...]=phi
 
@@ -167,7 +167,7 @@ def write_to_hdf5(filename,obs_pixels,noise_values,d,phi=None):
 def show_matrix_form(A):
     import matplotlib.pyplot as plt
     matr=A.to_array()
-    print matr
+    #print matr
     maxval=matr.max()
     matr/=maxval
     imgplot=plt.imshow(matr,interpolation='nearest',vmin=matr.min(), vmax=1)
