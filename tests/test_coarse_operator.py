@@ -9,7 +9,7 @@ def test_coarse_operator():
     """
     for pol in [1,3]:
 
-        nt,npix,nb= 100,30,2
+        nt,npix,nb= 100,20,2
         blocksize=nt/nb
         d,pairs,phi,t,diag=system_setup(nt,npix,nb,pol)
         blocksize=nt/nb
@@ -50,7 +50,8 @@ def test_coarse_operator():
         if (y2.dtype=='float64' ):
             assert  np.allclose(y2,y)
         elif (y2.dtype=='complex128' ):
-            assert np.allclose(y2.real,y.real) 
-                    #and np.allclose(y2.imag,y.imag)
+            print "complex"
+            assert np.allclose(y2.real,y.real)\
+                and np.allclose(y2.imag,y.imag)
 
 test_coarse_operator()

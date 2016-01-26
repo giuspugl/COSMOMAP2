@@ -32,13 +32,14 @@ def test_explicit_implementation_blockdiagonal_preconditioner():
     #import time
     from scipy.linalg import inv
     runcase={'IQU':3,'I':1,'QU':2}
-    nt=6000
+    nt=10000
     for pol in runcase.values():
-
+        #print pol
         phi=angles_gen(2.,nt)
         a=[10,50,100,300,600]
         for i in a:
             npix=int(i)
+
             pairs=pairs_gen(nt,npix,pol=pol)
             P=SparseLO(npix,nt,pairs,phi,pol=pol)
             x=np.ones(npix*pol)
@@ -60,6 +61,7 @@ def test_explicit_implementation_blockdiagonal_preconditioner():
                     v2[pol*j:pol*j+pol]=np.dot(ainv,v[pol*j:pol*j+pol])
 
             v3=Mbd*v
+            #print np.allclose(v2,x),np.allclose(v3,x)
             assert np.allclose(v2,v3)
             """
                 scipytime.append(end-start)
@@ -110,7 +112,7 @@ def test_preconditioner_times_matrix_gives_identity():
                     offset=0
                     x=np.ones(npix)
                 elif pol==3:
-                    x=np.array([0,0,1]*(npix))
+                    x=np.tile([0,0,1],(npix))
                     offset=2
                     #Mbd=BlockDiagonalPreconditionerLO(P.counts,P.mask,npix,pol=pol,\
                     #sin2=P.sin2,cos2=P.cos2,sincos=P.sincos,cos=P.cosine,sin=P.sine)
@@ -121,7 +123,9 @@ def test_preconditioner_times_matrix_gives_identity():
                 elif pol==2:
 
                     #Mbd=BlockDiagonalPreconditionerLO(None,P.mask,npix,pol,P.sin2,P.cos2,P.sincos)
-                    x=np.array([0,1]*(npix))
+                    #x=np.array([0,1]*(npix))
+                    x=np.tile([0,1],(npix))
+
                     offset=1
 
                 v=Mbd*P.T*P*x

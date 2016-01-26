@@ -129,7 +129,7 @@ class SparseLO(lp.LinearOperator):
         indices=np.arange(self.nrows,dtype='int32')
         for i,pix,cos,sin in zip(indices,self.pairs,self.cos,self.sin):
         #x[i]+=v[3*pix+1]*self.cos[i]+v[3*pix+2]*self.sin[i]
-            x[i]+=v[3*pix]+v[3*pix+1]*cos + v[3*pix+2]*sin
+            x[i]+=(v[3*pix]+v[3*pix+1]*cos + v[3*pix+2]*sin).astype(x.dtype)
 
         return x
 
@@ -143,9 +143,9 @@ class SparseLO(lp.LinearOperator):
         x=np.zeros(self.ncols*self.pol)
         zipped_arrs=zip(v,self.pairs,self.cos,self.sin)
         for vec_in,pix,cos,sin in zip(v,self.pairs,self.cos,self.sin):
-            x[3*pix]+=vec_in
-            x[1+3*pix]+=vec_in*cos
-            x[2+3*pix]+=vec_in*sin
+            x[3*pix]+=vec_in.astype(x.dtype)
+            x[1+3*pix]+=(vec_in*cos).astype(x.dtype)
+            x[2+3*pix]+=(vec_in*sin).astype(x.dtype)
         return x
 
     def initializeweights(self,phi,w):
@@ -234,7 +234,7 @@ class SparseLO(lp.LinearOperator):
             lambda_min=Tr_block/2. - sqrt
             cond_num=np.abs(lambda_max/lambda_min)
             mask1=np.where(self.counts>2)[0]
-            mask=np.where(cond_num<=1.e3 )[0]
+            mask=np.where(cond_num<=1.e2 )[0]
             #print len(mask),len(mask1)
             #print mask,mask1
             self.mask=np.intersect1d(mask1,mask)

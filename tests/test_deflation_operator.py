@@ -129,6 +129,7 @@ def test_deflation_operator_pol():
         assert np.allclose(y2,y)
         assert np.allclose(s2,s)
     elif (Z.dtype=='complex128' ):
+        print "complex"
         assert np.allclose(y2.real,y.real)
         #        and np.allclose(y2.imag,y.imag)
         assert np.allclose(s2.real,s.real)
