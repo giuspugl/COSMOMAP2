@@ -653,7 +653,7 @@ class DeflationLO(lp.LinearOperator):
         """
         y=np.zeros(self.nrows)
         for i in xrange(self.ncols):
-            y+=self.z[i]*x[i]
+            y+=(self.z[i]*x[i]).astype(x.dtype)
         return y
     def rmult(self,x):
         """
