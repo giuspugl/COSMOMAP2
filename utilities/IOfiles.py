@@ -84,8 +84,8 @@ def read_from_data_with_subscan_resize(filename,pol):
     d_pair=[]
     weight_pair=[]
     ground_pair=[]
-    #for i in range(n_bolo_pair):
-    for i in range(5):
+    for i in range(n_bolo_pair):
+    #for i in range(1):
         group=f['bolo_pair_'+str(i)]
         pixs_pair.append(subscan_resize(group['pixel'][...],subscan))
         polang_pair.append(subscan_resize(group['pol_angle'][...],subscan))
@@ -93,7 +93,7 @@ def read_from_data_with_subscan_resize(filename,pol):
         if pol== 1:
             d_pair.append(subscan_resize(group['sum'][...],subscan))
             weight_pair.append(group['weight_sum'][...])
-        elif pol==3:
+        elif pol==3 or pol==2:
             d_pair.append(subscan_resize(group['dif'][...],subscan))
             weight_pair.append(group['weight_dif'][...])
     f.close()
@@ -111,7 +111,7 @@ def write_ritz_eigenvectors_to_hdf5(z,filename):
 
     datatype=z[0][0].dtype
     if datatype == 'complex128':
-        dt=h5py.special_dtype(vlen=datatype)
+        dt=h5.special_dtype(vlen=datatype)
     else:
         dt = h5.h5t.IEEE_F64BE
     size_eigenvectors,n_eigenvals=len(z[0]),len(z)

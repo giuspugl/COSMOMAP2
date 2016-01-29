@@ -36,7 +36,6 @@ def test_preconditioner_times_matrix_gives_identity():
             x=np.array(comp*(npix))
             offset=0
 
-
         v=Mbd*P.T*P*x
         pixel_to_check=[ pol*i+offset for i in P.mask]
 

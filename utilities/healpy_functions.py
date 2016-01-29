@@ -89,7 +89,7 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname,write=False):
 
     return hp_list
 
-def compare_maps(outm,inm,pol,patch,mask):
+def compare_maps(outm,inm,pol,patch,mask,figname=None):
     """
     Print on device the input map,  the one processed from datastream
     and their difference.
@@ -100,12 +100,10 @@ def compare_maps(outm,inm,pol,patch,mask):
     if pol==1:
         maxval=max(inm)
         minval=min(inm)
-
         hp.gnomview(inm,rot=coords,xsize=600,min=minval,max=maxval,title='I input map',sub=131)
         hp.graticule(dpar=5,dmer=5,local=True)
         hp.gnomview(outm[0],rot=coords,xsize=600,min=minval,max=maxval,title='I output',sub=132)
         hp.graticule(dpar=5,dmer=5,local=True)
-        #hp.gnomview(inm-outm[0],rot=coords,xsize=600,min=minval,max=maxval,title=' I diff',sub=133)
         hp.gnomview((inm-outm[0])/inm,rot=coords,xsize=600,title='I diff',sub=133)
         hp.graticule(dpar=5,dmer=5,local=True)
 
@@ -125,7 +123,6 @@ def compare_maps(outm,inm,pol,patch,mask):
         hp.graticule(dpar=5,dmer=5,local=True)
         hp.gnomview(outm[2],rot=coords,xsize=600,min=minval,max=maxval,title='U output map',sub=235)
         hp.graticule(dpar=5,dmer=5,local=True)
-        #hp.gnomview(inm[2]-outm[2],rot=coords,xsize=600,min=minval,max=maxval,title='U diff',sub=23)
         hp.gnomview((inm[2]-outm[2])/inm[2],rot=coords,xsize=600,title='U diff',sub=236)
         hp.graticule(dpar=5,dmer=5,local=True)
 
@@ -144,9 +141,10 @@ def compare_maps(outm,inm,pol,patch,mask):
         hp.graticule(dpar=5,dmer=5,local=True)
         hp.gnomview(outm[1],rot=coords,xsize=600,min=minval,max=maxval,title='U output map',sub=235)
         hp.graticule(dpar=5,dmer=5,local=True)
-        #hp.gnomview(inm[1]-outm[1],rot=coords,xsize=600,min=minval,max=maxval,title='U diff',sub=23)
         hp.gnomview((inm[1]-outm[1])/inm[1],rot=coords,xsize=600,title='U diff',sub=236)
         hp.graticule(dpar=5,dmer=5,local=True)
-
-    plt.show()
+    if figname is None:
+        plt.show()
+    else:
+        plt.savefig(figname)
     pass
