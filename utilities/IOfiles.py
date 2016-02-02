@@ -108,6 +108,10 @@ def read_from_data_with_subscan_resize(filename,pol):
 
 
 def write_ritz_eigenvectors_to_hdf5(z,filename):
+    """
+    Save to a file the approximated eigenvectors computed via the :func:`deflationlib.arnoldi`
+    routine.
+    """
 
     datatype=z[0][0].dtype
     if datatype == 'complex128':
@@ -128,7 +132,11 @@ def write_ritz_eigenvectors_to_hdf5(z,filename):
     return
 
 def read_ritz_eigenvectors_from_hdf5(filename,npix):
+    """
+    read from hdf5 file the approximated eigenvectors
+    related to the deflation subspace.
 
+    """
     f=h5.File(filename,"r")
     n_eigenvals=f["Ritz_eigenvectors/n_eigenvectors"][...]
     z=np.zeros(n_eigenvals*npix).reshape(npix,n_eigenvals)
@@ -136,7 +144,7 @@ def read_ritz_eigenvectors_from_hdf5(filename,npix):
     for i in xrange(n_eigenvals):
         tmp=f["Ritz_eigenvectors/Eigenvector_"+str(i)][...]
         z[:,i]=tmp
-    return z
+    return z,n_eigenvals
 
 
 def write_to_hdf5(filename,obs_pixels,noise_values,d,phi=None):
@@ -165,6 +173,9 @@ def write_to_hdf5(filename,obs_pixels,noise_values,d,phi=None):
     pass
 
 def show_matrix_form(A):
+    """
+    Explicit the components of the Linear Operator A as a matrix.
+    """
     import matplotlib.pyplot as plt
     matr=A.to_array()
     #print matr
