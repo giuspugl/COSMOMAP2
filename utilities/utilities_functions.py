@@ -3,8 +3,6 @@ import numpy as np
 from scipy.linalg import get_blas_funcs
 import math as m
 
-
-
 def profile_run():
     """
     Profile the execution with :mod:`cProfile`

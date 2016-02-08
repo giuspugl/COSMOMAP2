@@ -84,8 +84,8 @@ def read_from_data_with_subscan_resize(filename,pol):
     d_pair=[]
     weight_pair=[]
     ground_pair=[]
-    for i in range(n_bolo_pair):
-    #for i in range(1):
+    #for i in range(n_bolo_pair):
+    for i in range(5):
         group=f['bolo_pair_'+str(i)]
         pixs_pair.append(subscan_resize(group['pixel'][...],subscan))
         polang_pair.append(subscan_resize(group['pol_angle'][...],subscan))
@@ -113,23 +113,28 @@ def write_ritz_eigenvectors_to_hdf5(z,filename):
     routine.
     """
 
-    datatype=z[0][0].dtype
+    datatype=z[0,0].dtype
+
     if datatype == 'complex128':
         dt=h5.special_dtype(vlen=datatype)
     else:
         dt = h5.h5t.IEEE_F64BE
-    size_eigenvectors,n_eigenvals=len(z[0]),len(z)
+    #size_eigenvectors,n_eigenvals=len(z[0]),len(z)
+    size_eigenvectors,n_eigenvals=z.shape
+    split=np.split(z.T,n_eigenvals,axis=0)
     f=h5.File(filename,"w")
     eigenvect_group=f.create_group("Ritz_eigenvectors")
     eigenvect_group.create_dataset('n_eigenvectors',np.shape(n_eigenvals),\
                                     dtype=h5.h5t.STD_I32BE,data=n_eigenvals)
-    i=0
-    for tmp in z:
-        eig=eigenvect_group.create_dataset('Eigenvector_'+str(i),(size_eigenvectors,),\
-                                            dtype=dt)
-        eig[...]=tmp
-        i+=1
-    return
+    #for i in xrange(n_eigenvals):
+    #    print np.shape(split[i])
+    #    tmp=np.array(split[i])
+    #    print tmp
+    eig=eigenvect_group.create_dataset("Eigenvectors",data=z,chunks=True)
+
+    #print i,split[i], eig[...]
+
+    pass
 
 def read_ritz_eigenvectors_from_hdf5(filename,npix):
     """
@@ -139,11 +144,9 @@ def read_ritz_eigenvectors_from_hdf5(filename,npix):
     """
     f=h5.File(filename,"r")
     n_eigenvals=f["Ritz_eigenvectors/n_eigenvectors"][...]
-    z=np.zeros(n_eigenvals*npix).reshape(npix,n_eigenvals)
-    tmp=[]
-    for i in xrange(n_eigenvals):
-        tmp=f["Ritz_eigenvectors/Eigenvector_"+str(i)][...]
-        z[:,i]=tmp
+    eigens=f["Ritz_eigenvectors/Eigenvectors"]
+    z=eigens[...]
+#    print z.shape
     return z,n_eigenvals
 
 

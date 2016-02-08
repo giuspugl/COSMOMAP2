@@ -89,6 +89,31 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname,write=False):
 
     return hp_list
 
+def show_map(outm,pol,patch,figname=None):
+    coord_dict={'ra23':[-13.45,-32.09]}
+    coords=coord_dict[patch]
+    if pol==1:
+        hp.gnomview(outm[0],rot=coords,xsize=600,title='I map')
+        hp.graticule(dpar=5,dmer=5,local=True)
+    elif pol==2:
+        hp.gnomview(outm[0],rot=coords,xsize=600,title='Q map',sub=121)
+        hp.graticule(dpar=5,dmer=5,local=True)
+        hp.gnomview(outm[1],rot=coords,xsize=600,title='U map',sub=122)
+        hp.graticule(dpar=5,dmer=5,local=True)
+    elif pol==3:
+        hp.gnomview(outm[0],rot=coords,xsize=600,title='I map',sub=131)
+        hp.graticule(dpar=5,dmer=5,local=True)
+        hp.gnomview(outm[1],rot=coords,xsize=600,title='Q map',sub=132)
+        hp.graticule(dpar=5,dmer=5,local=True)
+        hp.gnomview(outm[2],rot=coords,xsize=600,title='U map',sub=133)
+        hp.graticule(dpar=5,dmer=5,local=True)
+
+    if figname is None:
+        plt.show()
+    else:
+        plt.savefig(figname)
+
+
 def compare_maps(outm,inm,pol,patch,mask,figname=None):
     """
     Print on device the input map,  the one processed from datastream
