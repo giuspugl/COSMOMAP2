@@ -84,8 +84,8 @@ def read_from_data_with_subscan_resize(filename,pol):
     d_pair=[]
     weight_pair=[]
     ground_pair=[]
-    #for i in range(n_bolo_pair):
-    for i in range(5):
+    for i in range(n_bolo_pair):
+    #for i in range(5):
         group=f['bolo_pair_'+str(i)]
         pixs_pair.append(subscan_resize(group['pixel'][...],subscan))
         polang_pair.append(subscan_resize(group['pol_angle'][...],subscan))
