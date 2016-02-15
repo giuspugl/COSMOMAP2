@@ -8,7 +8,7 @@ def vecT_vec(size):
     return  np.outer(v,v.T)
 
 def test_arnoldi_algorithm():
-    size=10
+    size=1000
     diag=np.logspace(-5,0,num=size)
     #print diag
     D=np.diag(diag)
@@ -16,8 +16,7 @@ def test_arnoldi_algorithm():
 
     A=D
 
-    val=[min(diag),max(diag),diag[1],diag[-2],diag[size/2]]
-    #print val
+    val=[min(diag),max(diag),diag[size/3],diag[-size/3],diag[size/2]]
     for i in val:
         vTv=vecT_vec(size)
 
@@ -26,11 +25,13 @@ def test_arnoldi_algorithm():
     b=prec.dot(np.random.random(size))
     Alo=spla.aslinearoperator(A)
     mbd=spla.aslinearoperator(prec)
-    x0=np.zeros(size)
-    eigs,eigv=spla.eigs(B,k=5,which='SM',ncv=10,tol=1.e-3)
+    x0=np.ones(size)
+
+    #eigs1,eigv1=spla.eigs(A,M=mbd,Minv=D,k=len(val),which='SM',ncv=24,tol=1.e-3)
+    #print eigs1
+    eigs,eigv=spla.eigs(B,k=len(val),which='SM',ncv=24,tol=1.e-3)
 
     """
-    print eigv
     print "***"*30,"WRITING"
     write_ritz_eigenvectors_to_hdf5(eigv,'data/ritz_eigenvectors_test.hdf5')
     print "***"*30,"READING"
@@ -39,7 +40,7 @@ def test_arnoldi_algorithm():
     """
     r=len(eigs)
     for i in range(r):
-        assert norm2(B*eigv[:,i])/norm2(eigv[:,i]),eigs[i]
+        assert np.allclose(norm2(B*eigv[:,i])/norm2(eigv[:,i]),eigs[i])
         x,info=spla.cg(B,eigv[:,i],maxiter=3,tol=1.e-10)
         assert checking_output(info)
 

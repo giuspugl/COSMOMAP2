@@ -112,6 +112,7 @@ def show_map(outm,pol,patch,figname=None):
         plt.show()
     else:
         plt.savefig(figname)
+        plt.close()
 
 
 def compare_maps(outm,inm,pol,patch,mask,figname=None):
@@ -172,4 +173,5 @@ def compare_maps(outm,inm,pol,patch,mask,figname=None):
         plt.show()
     else:
         plt.savefig(figname)
+        plt.close() 
     pass
