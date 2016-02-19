@@ -12,7 +12,7 @@ def test_matrix_vector_product():
         phi=angles_gen(2.,nt)
         for npix in xrange(5,nt ):
             x=np.ones(pol*npix)
-            pairs=pairs_gen(nt,npix,pol=pol)
+            pairs=pairs_gen(nt,npix)
             #print "obs_pixs\t",pairs
             P=SparseLO(npix,nt,pairs,phi,pol=pol)
 
@@ -40,7 +40,7 @@ def test_explicit_implementation_blockdiagonal_preconditioner():
         for i in a:
             npix=int(i)
 
-            pairs=pairs_gen(nt,npix,pol=pol)
+            pairs=pairs_gen(nt,npix)
             P=SparseLO(npix,nt,pairs,phi,pol=pol)
             x=np.ones(npix*pol)
             v=P.T*P*x
@@ -61,36 +61,7 @@ def test_explicit_implementation_blockdiagonal_preconditioner():
                     v2[pol*j:pol*j+pol]=np.dot(ainv,v[pol*j:pol*j+pol])
 
             v3=Mbd*v
-            #print np.allclose(v2,x),np.allclose(v3,x)
             assert np.allclose(v2,v3)
-            """
-                scipytime.append(end-start)
-                #print P.mask
-                start=time.clock()
-                end=time.clock()
-                mytime.append(end-start )
-
-                #print scipytime," \t ",end-start,"\n"
-
-            n_pixels=a
-            #print len(a),len(scipytime),len(mytime)
-            plt.plot(n_pixels,scipytime,label='scipy time')
-            plt.plot(n_pixels,mytime,label='my implementation')
-            plt.yscale('log')
-            plt.xscale('log')
-            #plt.plot(n_pixels,mytime/scipytime,label='speedup')
-            plt.legend(loc='lower right', numpoints = 1,prop={'size':9} )
-            plt.ylabel('Time [sec]')
-            plt.xlabel('#pixels')
-            plt.show()
-
-            plt.plot(n_pixels,np.array(mytime)/np.array(scipytime),label='speedup')
-            plt.legend(loc='lower right', numpoints = 1,prop={'size':9} )
-            plt.xlabel('#pixels')
-
-            plt.show()
-            """
-
 
 def test_preconditioner_times_matrix_gives_identity():
     """
@@ -105,7 +76,7 @@ def test_preconditioner_times_matrix_gives_identity():
             a=[10,50,100]
             for i in a:
                 npix=int(i)
-                pairs=pairs_gen(nt,npix,pol=pol)
+                pairs=pairs_gen(nt,npix)
                 P=SparseLO(npix,nt,pairs,phi,pol=pol)
                 Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
                 if pol==1:
@@ -114,16 +85,7 @@ def test_preconditioner_times_matrix_gives_identity():
                 elif pol==3:
                     x=np.tile([0,0,1],(npix))
                     offset=2
-                    #Mbd=BlockDiagonalPreconditionerLO(P.counts,P.mask,npix,pol=pol,\
-                    #sin2=P.sin2,cos2=P.cos2,sincos=P.sincos,cos=P.cosine,sin=P.sine)
-                    A=Mbd*P.T*P
-                    #show_matrix_form(A)
-                    #Mbd=BlockDiagonalPreconditionerLO(P.counts,P.mask,npix,pol,\
-                    #                                    P.sin2,P.cos2,P.sincos, P.cosine,P.sine)
                 elif pol==2:
-
-                    #Mbd=BlockDiagonalPreconditionerLO(None,P.mask,npix,pol,P.sin2,P.cos2,P.sincos)
-                    #x=np.array([0,1]*(npix))
                     x=np.tile([0,1],(npix))
 
                     offset=1

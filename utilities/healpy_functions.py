@@ -83,7 +83,7 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname,write=False):
         healpix_map=np.zeros(healpix_npix)
 
         healpix_map[obspix]=mapin
-        hp_list=[healpix_map]
+        hp_list=healpix_map
     if write:
         hp.write_map(fname,hp_list)
 
@@ -92,19 +92,31 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname,write=False):
 def show_map(outm,pol,patch,figname=None):
     coord_dict={'ra23':[-13.45,-32.09]}
     coords=coord_dict[patch]
+
+    #outm[0][unseen]=hp.UNSEEN
+
     if pol==1:
-        hp.gnomview(outm[0],rot=coords,xsize=600,title='I map')
+        unseen=np.where(outm[0]==0)[0]
+        outm[unseen]=hp.UNSEEN
+        hp.gnomview(outm,rot=coords,xsize=600,title='I map')
         hp.graticule(dpar=5,dmer=5,local=True)
     elif pol==2:
+        unseen=np.where(outm[0]==0)[0]
+        outm[0][unseen]=hp.UNSEEN
         hp.gnomview(outm[0],rot=coords,xsize=600,title='Q map',sub=121)
         hp.graticule(dpar=5,dmer=5,local=True)
+        outm[1][unseen]=hp.UNSEEN
         hp.gnomview(outm[1],rot=coords,xsize=600,title='U map',sub=122)
         hp.graticule(dpar=5,dmer=5,local=True)
     elif pol==3:
+        unseen=np.where(outm[0]==0)[0]
+        outm[0][unseen]=hp.UNSEEN
         hp.gnomview(outm[0],rot=coords,xsize=600,title='I map',sub=131)
         hp.graticule(dpar=5,dmer=5,local=True)
+        outm[1][unseen]=hp.UNSEEN
         hp.gnomview(outm[1],rot=coords,xsize=600,title='Q map',sub=132)
         hp.graticule(dpar=5,dmer=5,local=True)
+        outm[2][unseen]=hp.UNSEEN
         hp.gnomview(outm[2],rot=coords,xsize=600,title='U map',sub=133)
         hp.graticule(dpar=5,dmer=5,local=True)
 
@@ -120,58 +132,92 @@ def compare_maps(outm,inm,pol,patch,mask,figname=None):
     Print on device the input map,  the one processed from datastream
     and their difference.
     """
-    inm*=mask
+
+    unseen=np.where(mask == 0. )[0]
+    observ=np.where(mask != 0. )[0]
+
+    print len(unseen)
     coord_dict={'ra23':[-13.45,-32.09]}
     coords=coord_dict[patch]
     if pol==1:
-        maxval=max(inm)
-        minval=min(inm)
+        maxval=max(inm[observ])
+        minval=min(inm[observ])
+        inm[unseen]=hp.UNSEEN
+        outm[unseen]=hp.UNSEEN
         hp.gnomview(inm,rot=coords,xsize=600,min=minval,max=maxval,title='I input map',sub=131)
         hp.graticule(dpar=5,dmer=5,local=True)
-        hp.gnomview(outm[0],rot=coords,xsize=600,min=minval,max=maxval,title='I output',sub=132)
+        #hp.gnomview(outm[0],rot=coords,xsize=600,min=minval,max=maxval,title='I output',sub=132)
+        hp.gnomview(outm,rot=coords,xsize=600,min=minval,max=maxval,title='I output',sub=132)
+
         hp.graticule(dpar=5,dmer=5,local=True)
-        hp.gnomview((inm-outm[0]),rot=coords,xsize=600,title='I diff',sub=133)
+
+        #diff=inm-outm[0]
+        diff=inm-outm
+
+        diff[unseen]=hp.UNSEEN
+        hp.gnomview(diff,rot=coords,xsize=600,title='I diff',sub=133)
         hp.graticule(dpar=5,dmer=5,local=True)
 
     elif pol==3:
-
-        maxval=max(inm[1])
-        minval=min(inm[1])
+        maxval=max(inm[1][observ])
+        minval=min(inm[1][observ])
+        inm[1][unseen]=hp.UNSEEN
+        outm[1][unseen]=hp.UNSEEN
         hp.gnomview(inm[1],rot=coords,xsize=600,min=minval,max=maxval,title='Q input map',sub=231)
         hp.graticule(dpar=5,dmer=5,local=True)
         hp.gnomview(outm[1],rot=coords,xsize=600,min=minval,max=maxval,title='Q output map',sub=232)
         hp.graticule(dpar=5,dmer=5,local=True)
-        hp.gnomview((inm[1]-outm[1]),rot=coords,xsize=600,title='Q diff',sub=233)
+
+        diff=inm[1]-outm[1]
+        diff[unseen]=hp.UNSEEN
+        hp.gnomview((diff),rot=coords,xsize=600,title='Q diff',sub=233)
         hp.graticule(dpar=5,dmer=5,local=True)
-        maxval=max(inm[2])
-        minval=min(inm[2])
+        maxval=max(inm[2][observ])
+        minval=min(inm[2][observ])
+        inm[2][unseen]=hp.UNSEEN
+        outm[2][unseen]=hp.UNSEEN
         hp.gnomview(inm[2],rot=coords,xsize=600,min=minval,max=maxval,title='U input map',sub=234)
         hp.graticule(dpar=5,dmer=5,local=True)
         hp.gnomview(outm[2],rot=coords,xsize=600,min=minval,max=maxval,title='U output map',sub=235)
         hp.graticule(dpar=5,dmer=5,local=True)
-        hp.gnomview((inm[2]-outm[2]),rot=coords,xsize=600,title='U diff',sub=236)
+
+        diff=inm[2]-outm[2]
+        diff[unseen]=hp.UNSEEN
+
+        hp.gnomview((diff),rot=coords,xsize=600,title='U diff',sub=236)
         hp.graticule(dpar=5,dmer=5,local=True)
 
     elif pol==2:
-        maxval=max(inm[0])
-        minval=min(inm[0])
+        maxval=max(inm[0][observ])
+        minval=min(inm[0][observ])
+        inm[0][unseen]=hp.UNSEEN
+        outm[0][unseen]=hp.UNSEEN
         hp.gnomview(inm[0],rot=coords,xsize=600,min=minval,max=maxval,title='Q input map',sub=231)
         hp.graticule(dpar=5,dmer=5,local=True)
         hp.gnomview(outm[0],rot=coords,xsize=600,min=minval,max=maxval,title='Q output map',sub=232)
         hp.graticule(dpar=5,dmer=5,local=True)
-        hp.gnomview((inm[0]-outm[0]),rot=coords,xsize=600,title='Q diff',sub=233)
+        diff=inm[0]-outm[0]
+        diff[unseen]=hp.UNSEEN
+        hp.gnomview((diff),rot=coords,xsize=600,title='Q diff',sub=233)
         hp.graticule(dpar=5,dmer=5,local=True)
-        maxval=max(inm[1])
-        minval=min(inm[1])
+        maxval=max(inm[1][observ])
+        minval=min(inm[1][observ])
+        inm[1][unseen]=hp.UNSEEN
+        outm[1][unseen]=hp.UNSEEN
         hp.gnomview(inm[1],rot=coords,xsize=600,min=minval,max=maxval,title='U input map',sub=234)
         hp.graticule(dpar=5,dmer=5,local=True)
         hp.gnomview(outm[1],rot=coords,xsize=600,min=minval,max=maxval,title='U output map',sub=235)
         hp.graticule(dpar=5,dmer=5,local=True)
-        hp.gnomview((inm[1]-outm[1]),rot=coords,xsize=600,title='U diff',sub=236)
+
+        diff=inm[1]-outm[1]
+        diff[unseen]=hp.UNSEEN
+
+        hp.gnomview((diff),rot=coords,xsize=600,title='U diff',sub=236)
         hp.graticule(dpar=5,dmer=5,local=True)
+
     if figname is None:
         plt.show()
     else:
         plt.savefig(figname)
-        plt.close() 
+        plt.close()
     pass

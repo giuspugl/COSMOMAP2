@@ -8,9 +8,12 @@ def vecT_vec(size):
     return  np.outer(v,v.T)
 
 def test_arnoldi_algorithm():
+    """
+    test the scipy routine of ARPACK to get the smallest eigenvectors of a matrix A
+
+    """
     size=1000
     diag=np.logspace(-5,0,num=size)
-    #print diag
     D=np.diag(diag)
     prec=np.diag(1/diag)
 
@@ -28,20 +31,11 @@ def test_arnoldi_algorithm():
     x0=np.ones(size)
 
     #eigs1,eigv1=spla.eigs(A,M=mbd,Minv=D,k=len(val),which='SM',ncv=24,tol=1.e-3)
-    #print eigs1
-    eigs,eigv=spla.eigs(B,k=len(val),which='SM',ncv=24,tol=1.e-3)
-
-    """
-    print "***"*30,"WRITING"
-    write_ritz_eigenvectors_to_hdf5(eigv,'data/ritz_eigenvectors_test.hdf5')
-    print "***"*30,"READING"
-
-    Z,r=read_ritz_eigenvectors_from_hdf5('data/ritz_eigenvectors_test.hdf5',size)
-    """
+    eigs,eigv=spla.eigs(A,M=D,Minv=prec,v0=x0,k=len(val),which='SM',ncv=24,tol=1.e-3)
     r=len(eigs)
     for i in range(r):
         assert np.allclose(norm2(B*eigv[:,i])/norm2(eigv[:,i]),eigs[i])
-        x,info=spla.cg(B,eigv[:,i],maxiter=3,tol=1.e-10)
+        x,info=spla.cg(B,eigv[:,i],maxiter=2,tol=1.e-10)
         assert checking_output(info)
 
 

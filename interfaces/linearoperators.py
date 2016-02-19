@@ -611,6 +611,7 @@ class CoarseLO(lp.LinearOperator):
     def set_operator(self,Z,Az,r):
         M=dgemm(Z,Az.T)
         self.L,self.U=lu(M,permute_l=True,overwrite_a=True,check_finite=False)
+        print "lu decomposition done"
     def __init__(self,Z,Az,r):
         self.set_operator(Z,Az,r)
         super(CoarseLO,self).__init__(nargin=r,nargout=r,matvec=self.mult,

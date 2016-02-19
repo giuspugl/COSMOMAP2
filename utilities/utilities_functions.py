@@ -49,7 +49,7 @@ def angles_gen(theta0,n,sample_freq=200. ,whwp_freq=2.5):
 
 
 
-def pairs_gen(nrows,ncols,pol=1):
+def pairs_gen(nrows,ncols):
     """
     Generate random ``int`` numbers   to fill the pointing matrix for observed pixels.
     Implemented even for polarization runs.
@@ -128,7 +128,7 @@ def subscan_resize(data,subscan):
         tmp.append(data[start:end])
     return np.concatenate(tmp)
 
-def system_setup(nt,npix,nb,pol=1):
+def system_setup(nt,npix,nb):
     """
     Setup the linear system
 
@@ -145,10 +145,8 @@ def system_setup(nt,npix,nb,pol=1):
 
     """
     d=np.random.random(nt)
-    pairs=pairs_gen(nt,npix,pol)
-    phi=None
-    if pol==3:
-        phi=angles_gen(rd.uniform(0,np.pi),nt)
+    pairs=pairs_gen(nt,npix)
+    phi=angles_gen(rd.uniform(0,np.pi),nt)
     bandsize=2
     t, diag=noise_val(nb,bandsize)
 

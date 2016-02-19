@@ -38,7 +38,7 @@ def test_toeplitz_vector_product_pol():
 
             x=np.arange(3*npix)
 
-            pairs=pairs_gen(nt,npix,pol=3)
+            pairs=pairs_gen(nt,npix)
             phi=angles_gen(rd.uniform(0,np.pi),nt)
             P=SparseLO(npix,nt,pairs,phi,pol=3)
             #construct the block diagonal operator
@@ -81,7 +81,7 @@ def test_toeplitzband_vector_product():
                 z=P.T*w
 
                 z2=P.T*N*P*x
-                
+
                 assert np.allclose(z2,z)
 
 

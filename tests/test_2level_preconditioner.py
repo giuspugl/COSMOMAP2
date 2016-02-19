@@ -10,108 +10,49 @@ def test_2level_preconditioner():
     of  the M2 level preconditioner.
     """
 
-    nt,npix,nb,pol= 100,30,2,1
-    x0=np.zeros(pol*npix)
-    d,pairs,phi,t,diag=system_setup(nt,npix,nb,pol)
+    nt,npix,nb= 400,40,2
+    d,pairs,phi,t,diag=system_setup(nt,npix,nb)
     blocksize=nt/nb
-    P=SparseLO(npix,nt,pairs,phi,pol)
     N=BlockLO(blocksize,t,offdiag=True)
-    diagN=BlockLO(blocksize,diag,offdiag=False)
-    M=InverseLO(P.T*diagN*P,method=spla.cg)
-    #print nb,nt,npix
-    b=P.T*N*d
-    A=P.T*N*P
-    # Build deflation supspace
-    h=[]
-    w=[]
-    tol=1.e-2
-    w,h=arnoldi(M*A,b,x0=x0,tol=tol,maxiter=1,inner_m=pol*npix)
-    m=len(w)
-    H=build_hess(h,m)
-    z,y=la.eig(H,check_finite=False)
-    total_energy=np.sqrt(sum(abs(z)**2))
-    eps= .2 * total_energy
+    import time
+    for pol in range(1,4):
+        x0=np.zeros(pol*npix)
+        P=SparseLO(npix,nt,pairs,phi,pol=pol,w=diag )
+        diagN=BlockLO(blocksize,diag,offdiag=False)
+        #M=InverseLO(P.T*diagN*P,method=spla.cg)
+        M=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
+        tol=1.e-4
+        #print nb,nt,npix
+        b=P.T*N*d
+        A=P.T*N*P
+        B=P.T*P
+        # Build deflation supspace
+        start=time.clock()
+        eigv,Z=spla.eigs(A,v0=b,k=10,which='SM',ncv=22,tol=tol)
+        end=time.clock()
+        #print "time to eigenv: %g"%(end-start)
 
-    #eps=.1*abs(max(z))
-    Z,r= build_Z(z,y, w, eps)
-    # Build Coarse operator
-    Az=Z*0.
-    for i in xrange(r):
-        Az[:,i]=A*Z[:,i]
-    E=CoarseLO(Z,Az,r)
+        r=Z.shape[1]
+        #print r
+        # Build Coarse operator
+        Az=Z*0.
+        for i in xrange(r):
+            Az[:,i]=A*Z[:,i]
+        E=CoarseLO(Z,Az,r)
+        Zd=DeflationLO(Z)
 
-    Zd=DeflationLO(Z)
-    #Build the 2-level preconditioner
-    I= lp.IdentityOperator(pol*npix)
+        #Build the 2-level preconditioner
+        I= lp.IdentityOperator(pol*npix)
 
-    R=I - A*Zd*E*Zd.T
-    M2=M*R + Zd*E*Zd.T
-    AZ=[]
-    for i in Zd.z:
-        AZ.append(A*i)
+        R=I - A*Zd*E*Zd.T
+        M2=M*R + Zd*E*Zd.T
+        AZ=[]
+        for i in Zd.z:
+            AZ.append(A*i)
 
-    for i in range(r):
-        assert (np.allclose(M2*AZ[i],Zd.z[i]) and norm2(R*AZ[i])<=1.e-10)
-
-    x0=np.zeros(pol*npix)
-    x,info=spla.gmres(A,b,x0=x0,tol=tol,maxiter=100,M=M2)
-    assert info==0
-
-
-
-
-def test_2level_preconditioner_pol():
-    """
-    Build and test the expected algebraic properties
-    of  the M2 level preconditioner on a polarization map case.
-    """
-    nt,npix,nb,pol= 100,40,2,3
-    blocksize=nt/nb
-    d,pairs,phi,t,diag=system_setup(nt,npix,nb,pol)
-    x0=np.zeros(pol*npix)
-    P=SparseLO(npix,nt,pairs,phi,pol)
-    N=BlockLO(blocksize,t,offdiag=True)
-    diagN=BlockLO(blocksize,diag,offdiag=False)
-    M=InverseLO(P.T*diagN*P,method=spla.cg)
-    #print nb,nt,npix
-    b=P.T*N*d
-    A=P.T*N*P
-    # Build deflation supspace
-    h=[]
-    w=[]
-    tol=1.e-2
-    w,h=arnoldi(M*A,b,x0=x0,tol=tol,maxiter=1,inner_m=pol*npix)
-    m=len(w)
-    H=build_hess(h,m)
-    z,y=la.eig(H,check_finite=False)
-    total_energy=np.sqrt(sum(abs(z)**2))
-    eps= .2 * total_energy
-
-#    eps=.1*abs(max(z))
-
-    Z,r= build_Z(z,y, w, eps)
-
-    Zd=DeflationLO(Z)
-    # Build Coarse operator
-    Az=Z*0.
-    for i in xrange(r):
-        Az[:,i]=A*Z[:,i]
-    E=CoarseLO(Z,Az,r)
-
-    #Build the 2-level preconditioner
-    I= lp.IdentityOperator(pol*npix)
-
-    R=I - A*Zd*E*Zd.T
-    M2=M*R + Zd*E*Zd.T
-    AZ=[]
-    for i in Zd.z:
-        AZ.append(A*i)
-    for i in range(r):
-        assert (np.allclose(M2*AZ[i],Zd.z[i]) and norm2(R*AZ[i])<=1.e-10)
-
-    x0=np.zeros(pol*npix)
-    x,info=spla.gmres(A,b,x0=x0,tol=tol,maxiter=100,M=M2)
-    assert info==0
+        for i in range(r):
+            assert (np.allclose(M2*AZ[i],Zd.z[i]) and norm2(R*AZ[i])<=1.e-10)
+            x,info=spla.cg(A,Z[:,i],tol=tol,maxiter=2,M=M2)
+            assert info==0
 
 test_2level_preconditioner()
-test_2level_preconditioner_pol()
