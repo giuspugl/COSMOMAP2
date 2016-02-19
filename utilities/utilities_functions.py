@@ -2,6 +2,17 @@ import random as rd
 import numpy as np
 from scipy.linalg import get_blas_funcs
 import math as m
+import warnings
+
+def filter_warnings(wfilter):
+    """
+    wfilter: {string}
+    - "ignore": never print matching warnings;
+    - "always": always print matching warnings
+
+    """
+    warnings.simplefilter(wfilter)
+
 
 def profile_run():
     """

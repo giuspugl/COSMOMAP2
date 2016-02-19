@@ -9,7 +9,8 @@ def test_2level_preconditioner():
     Build and test the expected algebraic properties
     of  the M2 level preconditioner.
     """
-
+    filter_warnings("ignore")
+    
     nt,npix,nb= 400,40,2
     d,pairs,phi,t,diag=system_setup(nt,npix,nb)
     blocksize=nt/nb
@@ -28,7 +29,7 @@ def test_2level_preconditioner():
         B=P.T*P
         # Build deflation supspace
         start=time.clock()
-        eigv,Z=spla.eigs(A,v0=b,k=10,which='SM',ncv=22,tol=tol)
+        eigv,Z=spla.eigs(A,k=6,which='SM',ncv=14,tol=tol)
         end=time.clock()
         #print "time to eigenv: %g"%(end-start)
 
@@ -52,7 +53,7 @@ def test_2level_preconditioner():
 
         for i in range(r):
             assert (np.allclose(M2*AZ[i],Zd.z[i]) and norm2(R*AZ[i])<=1.e-10)
-            x,info=spla.cg(A,Z[:,i],tol=tol,maxiter=2,M=M2)
+            x,info=spla.cg(M2*A,Z[:,i],tol=tol,maxiter=2)
             assert info==0
 
 test_2level_preconditioner()
