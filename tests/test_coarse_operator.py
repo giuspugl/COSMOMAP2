@@ -37,7 +37,8 @@ def test_coarse_operator():
 #        eps=.1*abs(max(z))
         Z,r= build_Z(z,y, w, eps)
         """
-        eigv,Z=spla.eigs(Mbd*A,k=3,which='SR',ncv=22,tol=tol)
+
+        eigv,Z=spla.eigs(Mbd*A,k=3,which='SR',ncv=18,tol=tol)
         #print eigv,Z
         r=Z.shape[1]
         Zd=DeflationLO(Z)
