@@ -3,7 +3,7 @@ import h5py as h5
 from  utilities_functions import *
 
 
-def read_from_data(filename,pol):
+def read_from_data(filename,pol,npairs=None):
     """
     Read a hdf5 file preprocessed by the AnalysisBackend
     of the Polarbear Collaboration.
@@ -13,11 +13,10 @@ def read_from_data(filename,pol):
     - ``filename``:{str}
         path to the hdf5 file
     - ``pol``:{int}
-
       - ``1``: read data for temperature only data;
-
       - ``3``: read  for polarization data;
-
+      -``npairs``:{int}
+          set how many bolo_pairs to read, default is ``None``.
 
     """
 
@@ -32,8 +31,12 @@ def read_from_data(filename,pol):
     d_pair=[]
     weight_pair=[]
     ground_pair=[]
-    #for i in range(n_bolo_pair):
-    for i in range(10):
+    if npairs is None:
+        n_to_read=n_bolo_pair
+    else:
+        n_to_read=npairs
+
+    for i in range(n_to_read):
         group=f['bolo_pair_'+str(i)]
         pixs_pair.append(group['pixel'][...])
         polang_pair.append(group['pol_angle'][...])
@@ -55,21 +58,21 @@ def read_from_data(filename,pol):
     return d,weight,polang,pixs,hp_pixs,ground,n_ces
 
 
-def read_from_data_with_subscan_resize(filename,pol):
+def read_from_data_with_subscan_resize(filename,pol,npairs=None):
     """
     Read a hdf5 file preprocessed by the AnalysisBackend
-    of the Polarbear Collaboration.
+    of the Polarbear Collaboration by considering, as chunks of data, only the
+    subscan samples.
 
     **Parameters**
 
     - ``filename``:{str}
         path to the hdf5 file
     - ``pol``:{int}
-
       - ``1``: read data for temperature only data;
-
-      - ``3``: read  for polarization data;
-
+      - ``2,3``: read  for polarization data;
+    -``npairs``:{int}
+        set how many bolo_pairs to read, default is ``None``.
 
     """
 
@@ -84,8 +87,12 @@ def read_from_data_with_subscan_resize(filename,pol):
     d_pair=[]
     weight_pair=[]
     ground_pair=[]
-    for i in range(n_bolo_pair):
-    #for i in range(5):
+    if npairs is None:
+        n_to_read=n_bolo_pair
+    else:
+        n_to_read=npairs
+        print "reading %d bolopairs"%n_to_read
+    for i in range(n_to_read):
         group=f['bolo_pair_'+str(i)]
         pixs_pair.append(subscan_resize(group['pixel'][...],subscan))
         polang_pair.append(subscan_resize(group['pol_angle'][...],subscan))
@@ -112,28 +119,20 @@ def write_ritz_eigenvectors_to_hdf5(z,filename):
     Save to a file the approximated eigenvectors computed via the :func:`deflationlib.arnoldi`
     routine.
     """
-
     datatype=z[0,0].dtype
-
     if datatype == 'complex128':
         dt=h5.special_dtype(vlen=datatype)
     else:
         dt = h5.h5t.IEEE_F64BE
-    #size_eigenvectors,n_eigenvals=len(z[0]),len(z)
+
     size_eigenvectors,n_eigenvals=z.shape
     split=np.split(z.T,n_eigenvals,axis=0)
     f=h5.File(filename,"w")
     eigenvect_group=f.create_group("Ritz_eigenvectors")
     eigenvect_group.create_dataset('n_eigenvectors',np.shape(n_eigenvals),\
                                     dtype=h5.h5t.STD_I32BE,data=n_eigenvals)
-    #for i in xrange(n_eigenvals):
-    #    print np.shape(split[i])
-    #    tmp=np.array(split[i])
-    #    print tmp
+
     eig=eigenvect_group.create_dataset("Eigenvectors",data=z,chunks=True)
-
-    #print i,split[i], eig[...]
-
     pass
 
 def read_ritz_eigenvectors_from_hdf5(filename,npix):
@@ -146,7 +145,6 @@ def read_ritz_eigenvectors_from_hdf5(filename,npix):
     n_eigenvals=f["Ritz_eigenvectors/n_eigenvectors"][...]
     eigens=f["Ritz_eigenvectors/Eigenvectors"]
     z=eigens[...]
-#    print z.shape
     return z,n_eigenvals
 
 

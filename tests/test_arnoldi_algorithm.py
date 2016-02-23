@@ -39,6 +39,49 @@ def test_arnoldi_algorithm():
         assert checking_output(info)
 
 
+def test_eigenvalue_routine_for_symmetric_matrix():
+    """
+    test the routine from ARPACK but by considering hermitian matrix.
+
+    """
+    pol=2
+    nt,npix,nb=400,60,1
+    blocksize=nt/nb
+    d,pairs,phi,t,diag=system_setup(nt,npix,nb)
+    x0=np.zeros(pol*npix)
+    N=BlockLO(blocksize,t,offdiag=True)
+    P=SparseLO(npix,nt,pairs,phi,pol=pol,w=None )
+    Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
+    #print nb,nt,npix
+
+    b=P.T*N*d
+    A=P.T*N*P
+    tol=1.e-4
+    prec=(P.T*P).to_array()
+    eigv1 ,Z1=spla.eigsh(A,M=P.T*P,Minv=Mbd,k=5,which='SM',ncv=12,tol=tol)
+    r=Z1.shape[1]
+    Az1=Z1*0.
+    for i in xrange(r):
+        Az1[:,i]=A*Z1[:,i]
+    E1=CoarseLO(Z1,Az1,r)
+    Zd1=DeflationLO(Z1)
+
+    #Build the 2-level preconditioner
+    I= lp.IdentityOperator(pol*npix)
+    R1=I - A*Zd1*E1*Zd1.T
+    M1=Mbd*R1 + Zd1*E1*Zd1.T
+    def count_iterations(x):
+        globals()['c']+=1
+    for i in range(r):
+        globals()['c']=0
+        assert np.allclose(M1*A*Z1[:,i],Z1[:,i])
+        assert norm2(R1*A*Z1[:,i])<=1.e-10
+        x,info=spla.cg(M1*A,Z1[:,i],tol=tol,maxiter=2,callback=count_iterations)
+        assert checking_output(info)
+        assert  globals()['c']==1
+
+
 
 
 test_arnoldi_algorithm()
+test_eigenvalue_routine_for_symmetric_matrix()

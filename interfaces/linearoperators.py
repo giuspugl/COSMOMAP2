@@ -86,6 +86,7 @@ class SparseLO(lp.LinearOperator):
 
         """
         x=np.zeros(self.nrows)
+
         for i,j in np.ndenumerate(self.pairs):
             x[i]+=v[j]
 
@@ -114,6 +115,7 @@ class SparseLO(lp.LinearOperator):
         indices=np.arange(self.nrows,dtype='int32')
         for index,pix,cos,sin in zip(indices,self.pairs,self.cos,self.sin):
             x[index]+=v[2*pix]*cos+v[2*pix+1]*sin
+
         return x
 
     def rmult_qu(self,v):
@@ -122,8 +124,9 @@ class SparseLO(lp.LinearOperator):
         """
         vec_out=np.zeros(self.ncols*self.pol)
         for vec_in,pix,cos,sin in zip(v,self.pairs,self.cos,self.sin):
-            vec_out[2*pix]+=vec_in* cos
-            vec_out[1+2*pix]+=vec_in*sin
+            vec_out[2*pix]  +=   (vec_in* cos)
+            vec_out[1+2*pix]+=   (vec_in*sin)
+
         return vec_out
 
 
@@ -146,8 +149,7 @@ class SparseLO(lp.LinearOperator):
         x=np.zeros(self.nrows)
         indices=np.arange(self.nrows,dtype='int32')
         for i,pix,cos,sin in zip(indices,self.pairs,self.cos,self.sin):
-        #x[i]+=v[3*pix+1]*self.cos[i]+v[3*pix+2]*self.sin[i]
-            x[i]+=(v[3*pix]+v[3*pix+1]*cos + v[3*pix+2]*sin).astype(x.dtype)
+            x[i]+=(v[3*pix]+v[3*pix+1]*cos + v[3*pix+2]*sin)
 
         return x
 
@@ -161,9 +163,9 @@ class SparseLO(lp.LinearOperator):
         x=np.zeros(self.ncols*self.pol)
         zipped_arrs=zip(v,self.pairs,self.cos,self.sin)
         for vec_in,pix,cos,sin in zip(v,self.pairs,self.cos,self.sin):
-            x[3*pix]+=vec_in.astype(x.dtype)
-            x[1+3*pix]+=(vec_in*cos).astype(x.dtype)
-            x[2+3*pix]+=(vec_in*sin).astype(x.dtype)
+            x[3*pix]    +=    vec_in
+            x[1+3*pix]  +=   (vec_in*cos)
+            x[2+3*pix]  +=   (vec_in*sin)
         return x
 
     def initializeweights(self,phi,w):
@@ -235,9 +237,10 @@ class SparseLO(lp.LinearOperator):
             lambda_min=tr/2. - sqrt
             cond_num=np.abs(lambda_max/lambda_min)
             mask=np.where(cond_num<=1.e3)[0]
-            self.cos2[mask]/=det[mask]
-            self.sin2[mask]/=det[mask]
-            self.sincos[mask]/=det[mask]
+            #self.cos2[mask]/=det[mask]
+            #self.sin2[mask]/=det[mask]
+            #self.sincos[mask]/=det[mask]
+            self.det=det
             self.mask=mask
 
         if self.pol==3:
@@ -421,6 +424,48 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
         """
         return self.__isoffdiag
 
+
+class BlockDiagonalLO(lp.LinearOperator):
+    """
+    docstring for BlockDiagonalLO
+    """
+
+    def __init__(self, A,n,pol=1):
+        self.size=pol*n
+        self.pol=pol
+        super(BlockDiagonalLO, self).__init__(nargin=self.size,nargout=self.size,\
+                                                matvec=self.mult, symmetric=True)
+        self.mask=A.mask
+        if pol==1 or pol==3:
+            self.counts=A.counts
+        if pol==2 or pol==3:
+            self.sin2=A.sin2[A.mask]
+            self.sincos=A.sincos[A.mask]
+            self.cos2=A.cos2[A.mask]
+        if pol==3:
+            self.cos=A.cosine[A.mask]
+            self.sin=A.sine[A.mask]
+
+    def mult(self,x):
+        y=x*0.
+        if self.pol==1:
+            y[self.mask]=x[self.mask]*self.counts[self.mask]
+        elif self.pol==3:
+            for pix,s2,c2,cs,c,s,hits in zip(self.mask,self.sin2,self.cos2,self.sincos,\
+                                                self.cos,self.sin,self.counts):
+                y[3*pix]  = hits*x[3*pix] + c *x[3*pix+1] +  s*x[3*pix+2]
+                y[3*pix+1]=  c * x[3*pix] + c2*x[3*pix+1] + cs*x[3*pix+2]
+                y[3*pix+2]=  s * x[3*pix] + cs*x[3*pix+1] + s2*x[3*pix+2]
+        elif self.pol==2:
+            for pix,s2,c2,cs in zip( self.mask,self.sin2,self.cos2,self.sincos):
+                y[pix*2]  =  c2  *x[2*pix] + cs *x[pix*2+1]
+                y[pix*2+1]=  cs  *x[2*pix] + s2 *x[pix*2+1]
+        return y
+
+
+
+
+
 class BlockDiagonalPreconditionerLO(lp.LinearOperator):
     """
     Standard preconditioner defined as:
@@ -467,9 +512,9 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
                 y[3*pix+2]=((c*cs -s*c2) *x[3*pix]+(-hits*cs+c*s)*x[3*pix+1]  +(hits*c2-c*c) *x[3*pix+2])/det
 
         elif self.pol==2:
-            for pix,s2,c2,cs in zip( self.mask,self.sin2,self.cos2,self.sincos):
-                y[pix*2]  =  s2  *x[2*pix] - cs *x[pix*2+1]
-                y[pix*2+1]= -cs  *x[2*pix] + c2 *x[pix*2+1]
+            for pix,s2,c2,cs,determ in zip( self.mask,self.sin2,self.cos2,self.sincos,self.det):
+                y[pix*2]  =  (s2  *x[2*pix] - cs *x[pix*2+1])/determ
+                y[pix*2+1]=  (-cs  *x[2*pix] + c2 *x[pix*2+1])/determ
 
         return y
 
@@ -481,6 +526,7 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
         if pol==1 :
             self.counts=A.counts
         elif pol==2:
+            self.det=A.det[A.mask]
             self.sin2=A.sin2[A.mask]
             self.cos2=A.cos2[A.mask]
             self.sincos=A.sincos[A.mask]
@@ -611,7 +657,6 @@ class CoarseLO(lp.LinearOperator):
     def set_operator(self,Z,Az,r):
         M=dgemm(Z,Az.T)
         self.L,self.U=lu(M,permute_l=True,overwrite_a=True,check_finite=False)
-        #print "lu decomposition done"
     def __init__(self,Z,Az,r):
         self.set_operator(Z,Az,r)
         super(CoarseLO,self).__init__(nargin=r,nargout=r,matvec=self.mult,
@@ -637,7 +682,7 @@ class DeflationLO(lp.LinearOperator):
         """
         y=np.zeros(self.nrows)
         for i in xrange(self.ncols):
-            y+=(self.z[i]*x[i]).astype(x.dtype)
+            y+=(self.z[i]*x[i])   #.astype(x.dtype)
         return y
     def rmult(self,x):
         """

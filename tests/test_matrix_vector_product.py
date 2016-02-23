@@ -56,8 +56,8 @@ def test_explicit_implementation_blockdiagonal_preconditioner():
                     v2[pol*j:pol*j+pol]=np.dot(ainv,v[pol*j:pol*j+pol])
             elif pol==2:
 
-                for j,s2,c2,cs in zip(P.mask,Mbd.sin2,Mbd.cos2, Mbd.sincos):
-                    ainv=np.array([[s2,-cs],[-cs,c2]])
+                for j,s2,c2,cs,det in zip(P.mask,Mbd.sin2,Mbd.cos2, Mbd.sincos,Mbd.det):
+                    ainv=np.array([[s2/det,-cs/det],[-cs/det,c2/det]])
                     v2[pol*j:pol*j+pol]=np.dot(ainv,v[pol*j:pol*j+pol])
 
             v3=Mbd*v
