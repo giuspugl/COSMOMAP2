@@ -5,42 +5,38 @@ import numpy as np
 
 def test_coarse_operator():
     """
-    Build and test the coarse operator E.
+    Build and test the :class:`CoarseLO`.
     """
-    nt,npix,nb,pol= 100,30,2,1
+    nt,npix,nb= 400,20,1
     blocksize=nt/nb
-    d,pairs,phi,t,diag,x0=system_setup(nt,npix,nb,pol)
-    blocksize=nt/nb
-    for i in range(2,4):
-        tol=10**(-i)
-        for j in range(1,2) :
-            eps=10**(-j)
-            P=SparseLO(npix,nt,pairs,phi,pol)
-            N=BlockLO(blocksize,t,offdiag=True)
-            diagN=BlockLO(blocksize,diag,offdiag=False)
-            M=InverseLO(P.T*diagN*P,method=spla.cg)
-            #print nb,nt,npix
-            b=P.T*N*d
-            A=P.T*N*P
-            # Build deflation supspace
-            h=[]
-            w=[]
-            w,h=arnoldi(M*A,b,x0=x0,tol=tol,maxiter=1,inner_m=pol*npix)
-            m=len(w)
-            H=build_hess(h,m)
+    d,pairs,phi,t,diag=system_setup(nt,npix,nb)
+    for pol in [1,2,3]:
 
-            z,y=la.eig(H,check_finite=False)
+        x0=np.zeros(pol*npix)
+        P=SparseLO(npix,nt,pairs,phi,pol)
+        N=BlockLO(blocksize,t,offdiag=True)
+        Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
+        b=P.T*N*d
+        A=P.T*N*P
+        diagN=lp.DiagonalOperator(diag*nt)
 
-            Z,r= build_Z(z,y, w, eps)
+        tol=1.e-5
+        B=BlockDiagonalLO(P,npix,pol=pol)
+        #B=(P.T*P).to_array()
+        eigv ,Z=spla.eigsh(A,M=B,Minv=Mbd,k=5,which='SM',ncv=15,tol=tol)
+        r=Z.shape[1]
+        Zd=DeflationLO(Z)
+        # Build Coarse operator
+        Az=Z*0.
+        for i in xrange(r):
+            Az[:,i]=A*Z[:,i]
+        invE=CoarseLO(Z,Az,r)
+        E=dgemm(Z,Az.T)
 
-            # Build Coarse operator
+        v=np.ones(r)
+        y=invE*v
+        v2=np.dot(E,invE*v)
+        y2=la.solve(E,v)
+        assert np.allclose(v,v2) and np.allclose(y2,y)
 
-            E=CoarseLO(Z,A,r)
-
-            v=np.ones(r)
-            y=E*v
-
-            y2= la.solve(E.L.dot(E.U),v)
-            assert  np.allclose(y2,y)
-            
 test_coarse_operator()
