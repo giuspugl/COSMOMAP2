@@ -4,3 +4,4 @@
 *.app
 *.hdf5
 *.fits
+doc/*
