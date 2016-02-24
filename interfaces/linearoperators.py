@@ -427,7 +427,13 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
 
 class BlockDiagonalLO(lp.LinearOperator):
     """
-    docstring for BlockDiagonalLO
+    Explicit implementation of :math:`A \, diag(N^{-1}) A^T`, in order to save time
+    in the application of the two matrices onto a vector (in this way the leading dimension  will be :math:`n_{pix}`
+    instead of  :math:`n_t`).
+
+    .. note::
+        it is initialized as the  :class:`BlockDiagonalPreconditionerLO` since it involves
+        computation with  the same matrices.
     """
 
     def __init__(self, A,n,pol=1):
@@ -447,6 +453,10 @@ class BlockDiagonalLO(lp.LinearOperator):
             self.sin=A.sine[A.mask]
 
     def mult(self,x):
+        """
+        Multiplication of  :math:`A \, diag(N^{-1}) A^T` on to a vector math:`x`
+        ( :math:`n_{pix}` array).
+        """
         y=x*0.
         if self.pol==1:
             y[self.mask]=x[self.mask]*self.counts[self.mask]
@@ -476,7 +486,8 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
 
     where :math:`A` is a :class:`SparseLO` operator.
     Such inverse operator  could be easily computed given the structure of the
-    matrix :math:`A`, (sparse if `pol=1`, block-sparse if `pol=3,2`).
+    matrix :math:`A`. It could be  sparse in the case of Intensity only analysis (`pol=1`),
+    block-sparse if polarization is included (`pol=3,2`).
 
 
     **Parameters**

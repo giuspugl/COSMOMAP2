@@ -15,8 +15,9 @@ def read_from_data(filename,pol,npairs=None):
     - ``pol``:{int}
       - ``1``: read data for temperature only data;
       - ``3``: read  for polarization data;
-      -``npairs``:{int}
-          set how many bolo_pairs to read, default is ``None``.
+
+    -``npairs``:{int}
+        set how many bolo_pairs to read, default is ``None``.
 
     """
 
@@ -71,6 +72,7 @@ def read_from_data_with_subscan_resize(filename,pol,npairs=None):
     - ``pol``:{int}
       - ``1``: read data for temperature only data;
       - ``2,3``: read  for polarization data;
+
     -``npairs``:{int}
         set how many bolo_pairs to read, default is ``None``.
 
