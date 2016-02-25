@@ -16,7 +16,7 @@ def test_block_diagonal_operator():
         for pol in runcase.values():
             blocksize=nt/nb
             for i in a:
-                print pol*i,nt
+                #print pol*i,nt
                 npix=int(i)
                 x=np.ones(pol*npix)
                 d,pairs,phi,t,diag=system_setup(nt,npix,nb)
@@ -27,11 +27,11 @@ def test_block_diagonal_operator():
                 y=invMbd*x
                 y2=P.T*P*x
                 #show_matrix_form(invMbd*Mbd)
-                assert np.allclose(y[P.mask],y2[P.mask])
+                assert np.allclose(y,y2)
 
                 # invMbd*Mbd = Identity
 
                 v=Mbd*invMbd*x
-                assert np.allclose(v[P.mask],x[P.mask])
+                assert np.allclose(v,x)
 
 test_block_diagonal_operator()
