@@ -5,3 +5,4 @@
 20120718_093931.hdf5
 *.fits
 doc/*
+.coverage
