@@ -361,7 +361,7 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
 
     **Parameters**
 
-    - ``blocksize`` : {int}
+    - ``blocksize`` : {int or list }
         size of each diagonal block, it is : :math:`blocksize= n/nblocks`.
     - ``t`` : {array}
         noise values for each block
@@ -403,16 +403,37 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
                 d.fill(i)
                 self.blocklist.append(lp.DiagonalOperator(d))
                 tmplist.append(d)
-
                 d=np.empty(self.blocksize)
-
             self.diag=np.concatenate(tmplist)
+
+    def build_unbalanced_blocks(self):
+        """
+        Build the  list of Diagonal blocks of :class:`blk.BlockDiagonalLinearOperator`
+        by assuming that the blocks have different size. Of course it is required that:
+
+        .. math::
+            \sum _{i=1} ^{nblocks} size(block_i) = N_t
+
+        """
+        self.blocklist=[]
+        tmplist=[]
+        for size,weight in zip(self.blocksize,self.covnoise):
+            d=np.ones(size)
+            d.fill(weight)
+            self.blocklist.append(lp.DiagonalOperator(d))
+            tmplist.append(d)
+            d=np.empty(size)
+        self.diag=np.concatenate(tmplist)
+
 
     def __init__(self,blocksize,t,offdiag=False):
         self.__isoffdiag = offdiag
         self.blocksize=blocksize
         self.covnoise=t
-        self.build_blocks()
+        if type(blocksize) is list:
+            self.build_unbalanced_blocks()
+        else:
+            self.build_blocks()
 
         super(BlockLO, self).__init__(self.blocklist)
 

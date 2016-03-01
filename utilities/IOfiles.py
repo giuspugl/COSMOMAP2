@@ -5,7 +5,7 @@ from  utilities_functions import *
 
 def read_from_data(filename,pol,npairs=None):
     """
-    Read a hdf5 file preprocessed by the AnalysisBackend
+    Read a hdf5 file of one Constant Elevation Scan preprocessed by the AnalysisBackend
     of the Polarbear Collaboration.
 
     **Parameters**
@@ -13,8 +13,9 @@ def read_from_data(filename,pol,npairs=None):
     - ``filename``:{str}
         path to the hdf5 file
     - ``pol``:{int}
-      - ``1``: read data for temperature only data;
-      - ``3``: read  for polarization data;
+      - ``1``: read data for intensity  data;
+      - ``2``: read data for polarization data;
+      - ``3``: read  for both intensity and  polarization data;
 
     -``npairs``:{int}
         set how many bolo_pairs to read, default is ``None``.
@@ -57,6 +58,52 @@ def read_from_data(filename,pol,npairs=None):
     ground=np.concatenate(ground_pair)
 
     return d,weight,polang,pixs,hp_pixs,ground,n_ces
+
+def read_multiple_ces(filelist,pol, npairs=None,filtersubscan=True):
+    """
+    Read a list of  hdf5 files of multiple CES scans preprocessed by the AnalysisBackend
+    of the Polarbear Collaboration.
+
+    **Parameters**
+
+    - ``filelist``:{list of str}
+        list containing the path to the hdf5 files
+    - ``pol``:{int}
+      - ``1``: read data for intensity  data;
+      - ``2``: read data for polarization data;
+      - ``3``: read  for both intensity  and polarization data;
+
+    -``npairs``:{int}
+        set how many bolo_pairs to read, default is ``None``.
+    -``filtersubscan``:{bool}
+        activate the subscan selection on to data (default ``True``).
+
+    """
+
+
+    if filtersubscan:
+        readf = read_from_data_with_subscan_resize
+        subscan=[]
+    else:  readf = read_from_data
+    pixs,polang,d,weight,ground,hp_pixs,n_samples=[],[],[],[],[],[],[]
+    for f in filelist:
+        outdata=readf(f,pol,npairs=npairs)
+        d.append(outdata[0])
+        weight.append(outdata[1])
+        polang.append(outdata[2])
+        pixs.append(outdata[3])
+        ground.append(outdata[5])
+        n_samples.append(len(outdata[0]))
+        if filtersubscan:
+            subscan.append(outdata[7])
+    hp_pixs.append(outdata[4])
+    if filtersubscan:
+        return np.concatenate(d),np.concatenate(weight),np.concatenate(polang),\
+          np.concatenate(pixs),np.concatenate(hp_pixs),np.concatenate(ground),\
+                n_samples,np.concatenate(subscan)
+    else:
+        return np.concatenate(d),np.concatenate(weight),np.concatenate(polang),\
+            np.concatenate(pixs), np.concatenate(hp_pixs),np.concatenate(ground),n_samples
 
 
 def read_from_data_with_subscan_resize(filename,pol,npairs=None):
@@ -137,7 +184,7 @@ def write_ritz_eigenvectors_to_hdf5(z,filename):
     eig=eigenvect_group.create_dataset("Eigenvectors",data=z,chunks=True)
     pass
 
-def read_ritz_eigenvectors_from_hdf5(filename,npix):
+def read_ritz_eigenvectors_from_hdf5(filename):
     """
     read from hdf5 file the approximated eigenvectors
     related to the deflation subspace.
