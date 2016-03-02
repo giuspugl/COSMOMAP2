@@ -86,13 +86,13 @@ def test_toeplitzband_vector_product():
 
 def test_different_block_size():
     """
-    testnoise matrix initialization with different block sizes
+    test noise matrix initialization with different block sizes
     """
     nb=6
     blocksize=2*[500,400,124]
     nt=sum(blocksize)
     print blocksize
-    npix=128
+    npix=64
     runcase={'I':1,'QU':2,'IQU':3}
     for pol in runcase.values():
         d,pairs,phi,t,diag=system_setup(nt,npix,nb)

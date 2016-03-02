@@ -1,3 +1,4 @@
+import time
 import scipy.linalg as la
 from interfaces import *
 from utilities import *
@@ -14,9 +15,8 @@ def test_2level_preconditioner():
     d,pairs,phi,t,diag=system_setup(nt,npix,nb)
     blocksize=nt/nb
     N=BlockLO(blocksize,t,offdiag=True)
-    import time
-    for pol in range(1,4):
-
+    runcase={'I':1,'QU':2,'IQU':3}
+    for pol in runcase.values():
         x0=np.ones(pol*npix)
         P=SparseLO(npix,nt,pairs,phi,pol=pol )
         #M=InverseLO(P.T*diagN*P,method=spla.cg)
