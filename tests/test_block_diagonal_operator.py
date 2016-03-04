@@ -34,4 +34,5 @@ def test_block_diagonal_operator():
                 v=Mbd*invMbd*x
                 assert np.allclose(v,x)
 
+
 test_block_diagonal_operator()

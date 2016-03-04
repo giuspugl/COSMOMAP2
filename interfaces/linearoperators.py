@@ -463,13 +463,15 @@ class BlockDiagonalLO(lp.LinearOperator):
         super(BlockDiagonalLO, self).__init__(nargin=self.size,nargout=self.size,\
                                                 matvec=self.mult, symmetric=True)
         self.mask=A.mask
-        if pol==1 or pol==3:
+        if pol==1 :
             self.counts=A.counts
         if pol==2 or pol==3:
+
             self.sin2=A.sin2[A.mask]
             self.sincos=A.sincos[A.mask]
             self.cos2=A.cos2[A.mask]
         if pol==3:
+            self.counts=A.counts[A.mask]
             self.cos=A.cosine[A.mask]
             self.sin=A.sine[A.mask]
 
