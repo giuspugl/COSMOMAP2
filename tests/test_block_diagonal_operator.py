@@ -35,4 +35,4 @@ def test_block_diagonal_operator():
                 assert np.allclose(v,x)
 
 
-test_block_diagonal_operator()
+#test_block_diagonal_operator()

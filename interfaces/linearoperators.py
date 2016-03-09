@@ -392,19 +392,20 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
 
         """
 
+        tmplist=[]
         self.blocklist=[]
         if self.isoffdiag:
+            tmplist.append(self.covnoise[0])
             self.blocklist = [ToeplitzLO(i,self.blocksize) for i in self.covnoise]
 
         if not self.isoffdiag:
-            tmplist=[]
             d=np.ones(self.blocksize)
             for i in self.covnoise:
                 d.fill(i)
                 self.blocklist.append(lp.DiagonalOperator(d))
                 tmplist.append(d)
                 d=np.empty(self.blocksize)
-            self.diag=np.concatenate(tmplist)
+        self.diag=np.concatenate(tmplist)
 
     def build_unbalanced_blocks(self):
         """
@@ -658,15 +659,15 @@ class InverseLO(lp.LinearOperator):
         return self.__preconditioner
 
 
-from scipy.linalg import solve,lu
+from scipy.linalg import solve,lu,eigh
 
 class CoarseLO(lp.LinearOperator):
     """
     This class contains all the operation involving the coarse operator :math:`E`.
     In this implementation :math:`E` is always applied to a vector wiht
     its inverse : :math:`E^{-1}`.
-    When initialized it performs an LU decomposition to accelerate the performances
-    of the inversion.
+    When initialized it performs either an LU or an eigenvalue  decomposition
+    to accelerate the performances of the inversion.
 
     **Parameters**
 
@@ -676,6 +677,9 @@ class CoarseLO(lp.LinearOperator):
             to  compute vectors :math:`AZ_i`;
     - ``r`` :  {int}
             :math:`rank(Z)`, dimension of the deflation subspace.
+    -``apply``:{str}
+            -``LU``: performs LU decomposition,
+            -``eig``: compute the eigenvalues and eigenvectors of ``E``.
     """
 
     def mult(self,v):
@@ -688,12 +692,41 @@ class CoarseLO(lp.LinearOperator):
         x=solve(self.U,y,overwrite_b=True)
         return x
 
-    def set_operator(self,Z,Az,r):
+    def mult_eig(self,v):
+        """
+        Matrix vector multiplication with :math:`E^{-1}` computed via
+        :func:`setting_inverse_w_eigenvalues`.
+        """
+        return self.invE.dot(v)
+
+    def setting_inverse_w_eigenvalues(self,E):
+        """
+        This routine computes the inverse of ``E`` by a decomposition through an  eigenvalue
+        decomposition. It further checks whether it has some degenerate eigenvalues,
+        i.e. 0 to numerical precision (``1.e-15``), and eventually excludes these eigenvalues
+        from the anaysis.
+        """
+        #for i,y in np.ndenumerate(eigenvals):
+        #    if abs(y/lambda_max)>1.e-5:
+        #       diags[i]=1./y
+        eigenvals,W=eigh(E)
+        lambda_max=max(eigenvals)
+        diags=eigenvals*0.
+        for i in np.where(abs(eigenvals/lambda_max)>1.e-5):
+                diags[i]=1./eigenvals[i]
+        D=np.diag(diags)
+        tmp=dgemm(D,W)
+        self.invE=dgemm(W.T,tmp)
+
+    def __init__(self,Z,Az,r,apply='LU'):
         M=dgemm(Z,Az.T)
-        self.L,self.U=lu(M,permute_l=True,overwrite_a=True,check_finite=False)
-    def __init__(self,Z,Az,r):
-        self.set_operator(Z,Az,r)
-        super(CoarseLO,self).__init__(nargin=r,nargout=r,matvec=self.mult,
+        if apply=='eig':
+            self.setting_inverse_w_eigenvalues(M)
+            super(CoarseLO,self).__init__(nargin=r,nargout=r,matvec=self.mult_eig,
+                                            symmetric=True)
+        elif apply =='LU':
+            self.L,self.U=lu(M,permute_l=True,overwrite_a=True,check_finite=False)
+            super(CoarseLO,self).__init__(nargin=r,nargout=r,matvec=self.mult,
                                             symmetric=True)
 
 class DeflationLO(lp.LinearOperator):

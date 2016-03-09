@@ -104,7 +104,7 @@ def test_different_block_size():
         z2=P.T*N*P*x
         assert np.allclose(z2,z)
 
-test_different_block_size()
-test_toeplitz_vector_product()
-test_toeplitz_vector_product_pol()
-test_toeplitzband_vector_product()
+#test_different_block_size()
+#test_toeplitz_vector_product()
+#test_toeplitz_vector_product_pol()
+#test_toeplitzband_vector_product()

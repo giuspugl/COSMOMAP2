@@ -10,6 +10,7 @@ def test_coarse_operator():
     nt,npix,nb= 400,20,1
     blocksize=nt/nb
     d,pairs,phi,t,diag=system_setup(nt,npix,nb)
+    c=bash_colors()
     for pol in [1,2,3]:
 
         x0=np.zeros(pol*npix)
@@ -30,7 +31,7 @@ def test_coarse_operator():
         Az=Z*0.
         for i in xrange(r):
             Az[:,i]=A*Z[:,i]
-        invE=CoarseLO(Z,Az,r)
+        invE=CoarseLO(Z,Az,r,apply='eig')
         E=dgemm(Z,Az.T)
 
         v=np.ones(r)
@@ -39,4 +40,4 @@ def test_coarse_operator():
         y2=la.solve(E,v)
         assert np.allclose(v,v2) and np.allclose(y2,y)
 
-test_coarse_operator()
+#test_coarse_operator()

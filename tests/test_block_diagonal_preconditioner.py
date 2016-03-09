@@ -92,6 +92,6 @@ def test_SPD_properties_block_diagonal_preconditioner():
 
 filter_warnings("ignore")
 
-test_block_diagonal_preconditioner()
-test_block_diagonal_precond_action_as_inverse_operator()
-test_SPD_properties_block_diagonal_preconditioner()
+#test_block_diagonal_preconditioner()
+#test_block_diagonal_precond_action_as_inverse_operator()
+#test_SPD_properties_block_diagonal_preconditioner()

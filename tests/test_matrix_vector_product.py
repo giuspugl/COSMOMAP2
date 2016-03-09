@@ -96,6 +96,6 @@ def test_preconditioner_times_matrix_gives_identity():
                 assert np.allclose(v[pixel_to_check],x[pixel_to_check])
 
 
-test_matrix_vector_product()
-test_preconditioner_times_matrix_gives_identity()
-test_explicit_implementation_blockdiagonal_preconditioner()
+#test_matrix_vector_product()
+#test_preconditioner_times_matrix_gives_identity()
+#test_explicit_implementation_blockdiagonal_preconditioner()

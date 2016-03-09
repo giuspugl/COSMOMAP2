@@ -7,8 +7,7 @@ import numpy as np
 
 def test_2level_preconditioner():
     """
-    Build and test the expected algebraic properties
-    of  the M2 level preconditioner.
+    Build and test the expected algebraic properties of  the M2 level preconditioner.
     """
 
     nt,npix,nb= 500,40,1
@@ -56,4 +55,4 @@ def test_2level_preconditioner():
             x,info=spla.cg(M2*A,Z[:,i],tol=tol,maxiter=2)
             assert info==0
 
-test_2level_preconditioner()
+#test_2level_preconditioner()

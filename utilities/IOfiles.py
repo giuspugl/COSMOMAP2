@@ -175,7 +175,6 @@ def write_ritz_eigenvectors_to_hdf5(z,filename):
         dt = h5.h5t.IEEE_F64BE
 
     size_eigenvectors,n_eigenvals=z.shape
-    split=np.split(z.T,n_eigenvals,axis=0)
     f=h5.File(filename,"w")
     eigenvect_group=f.create_group("Ritz_eigenvectors")
     eigenvect_group.create_dataset('n_eigenvectors',np.shape(n_eigenvals),\
