@@ -181,6 +181,7 @@ def write_ritz_eigenvectors_to_hdf5(z,filename):
                                     dtype=h5.h5t.STD_I32BE,data=n_eigenvals)
 
     eig=eigenvect_group.create_dataset("Eigenvectors",data=z,chunks=True)
+    f.close()
     pass
 
 def read_ritz_eigenvectors_from_hdf5(filename):
@@ -193,6 +194,7 @@ def read_ritz_eigenvectors_from_hdf5(filename):
     n_eigenvals=f["Ritz_eigenvectors/n_eigenvectors"][...]
     eigens=f["Ritz_eigenvectors/Eigenvectors"]
     z=eigens[...]
+    f.close()
     return z,n_eigenvals
 
 

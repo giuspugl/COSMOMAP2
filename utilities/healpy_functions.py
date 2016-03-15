@@ -155,7 +155,7 @@ def compare_maps(outm,inm,pol,patch,mask,figname=None):
         diff=inm-outm
 
         diff[unseen]=hp.UNSEEN
-        hp.gnomview(diff,rot=coords,xsize=600,title='I diff',sub=133)
+        hp.gnomview(diff,rot=coords,xsize=600,title='I diff',sub=133,norm='hist')
         hp.graticule(dpar=5,dmer=5,local=True)
 
     elif pol==3:
@@ -170,7 +170,7 @@ def compare_maps(outm,inm,pol,patch,mask,figname=None):
 
         diff=inm[1]-outm[1]
         diff[unseen]=hp.UNSEEN
-        hp.gnomview((diff),rot=coords,xsize=600,title='Q diff',sub=233)
+        hp.gnomview((diff),rot=coords,xsize=600,title='Q diff',sub=233,norm='hist')
         hp.graticule(dpar=5,dmer=5,local=True)
         maxval=max(inm[2][observ])
         minval=min(inm[2][observ])
@@ -184,7 +184,7 @@ def compare_maps(outm,inm,pol,patch,mask,figname=None):
         diff=inm[2]-outm[2]
         diff[unseen]=hp.UNSEEN
 
-        hp.gnomview((diff),rot=coords,xsize=600,title='U diff',sub=236)
+        hp.gnomview((diff),rot=coords,xsize=600,title='U diff',sub=236,norm='hist')
         hp.graticule(dpar=5,dmer=5,local=True)
 
     elif pol==2:
@@ -198,7 +198,7 @@ def compare_maps(outm,inm,pol,patch,mask,figname=None):
         hp.graticule(dpar=5,dmer=5,local=True)
         diff=inm[0]-outm[0]
         diff[unseen]=hp.UNSEEN
-        hp.gnomview((diff),rot=coords,xsize=600,title='Q diff',sub=233)
+        hp.gnomview((diff),rot=coords,xsize=600,title='Q diff',sub=233,norm='hist')
         hp.graticule(dpar=5,dmer=5,local=True)
         maxval=max(inm[1][observ])
         minval=min(inm[1][observ])
@@ -212,7 +212,7 @@ def compare_maps(outm,inm,pol,patch,mask,figname=None):
         diff=inm[1]-outm[1]
         diff[unseen]=hp.UNSEEN
 
-        hp.gnomview((diff),rot=coords,xsize=600,title='U diff',sub=236)
+        hp.gnomview((diff),rot=coords,xsize=600,title='U diff',sub=236,norm='hist')
         hp.graticule(dpar=5,dmer=5,local=True)
 
     if figname is None:
