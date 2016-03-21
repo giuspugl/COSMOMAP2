@@ -26,11 +26,12 @@ def test_block_diagonal_operator():
                 #invMbd and P.T*P  operate in the same on to a pixel vector
                 y=invMbd*x
                 y2=P.T*P*x
+
                 #show_matrix_form(invMbd*Mbd)
                 assert np.allclose(y,y2)
 
                 # invMbd*Mbd = Identity
-
+                
                 v=Mbd*invMbd*x
                 assert np.allclose(v,x)
 

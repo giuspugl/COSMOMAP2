@@ -1,5 +1,10 @@
 import healpy as hp
 import numpy as np
+import matplotlib
+import os
+if 'DISPLAY' not in os.environ:
+    matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 
 def  obspix2mask(obspix,pixs,nside,fname,write=False):
@@ -136,7 +141,6 @@ def compare_maps(outm,inm,pol,patch,mask,figname=None):
     unseen=np.where(mask == 0. )[0]
     observ=np.where(mask != 0. )[0]
 
-    print len(unseen)
     coord_dict={'ra23':[-13.45,-32.09]}
     coords=coord_dict[patch]
     if pol==1:

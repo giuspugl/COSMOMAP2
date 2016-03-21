@@ -706,13 +706,26 @@ class CoarseLO(lp.LinearOperator):
         i.e. 0 to numerical precision (``1.e-15``), and eventually excludes these eigenvalues
         from the anaysis.
         """
-        #for i,y in np.ndenumerate(eigenvals):
-        #    if abs(y/lambda_max)>1.e-5:
-        #       diags[i]=1./y
+
         eigenvals,W=eigh(E)
         lambda_max=max(eigenvals)
         diags=eigenvals*0.
-        for i in np.where(abs(eigenvals/lambda_max)>1.e-5):
+        print abs(eigenvals/lambda_max)
+        threshold_to_degen=1.e-5
+        nondegenerate=np.where(abs(eigenvals/lambda_max)>threshold_to_degen)[0]
+        degenerate=np.where(abs(eigenvals/lambda_max)<threshold_to_degen)[0]
+        c=bash_colors()
+        if len(degenerate)!=0:
+            print c.header("==="*30)
+            print c.warning("\t DISCARDING %d OUT OF %d EIGENVALUES\t"%(len(degenerate),len(eigenvals)))
+            print eigenvals[degenerate]
+            print c.header("==="*30)
+        else:
+            print c.header("==="*30)
+            print c.header("\t Matrix E is not singular, all its eigenvalues have been taken into account\t")
+            print c.header("==="*30)
+
+        for i in nondegenerate:
                 diags[i]=1./eigenvals[i]
         D=np.diag(diags)
         tmp=dgemm(D,W)

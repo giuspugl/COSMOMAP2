@@ -14,15 +14,15 @@ def test_block_diagonal_precond_onto_real_data():
     #runcase={'IQU':3}
     runcase={'I':1,'QU':2,'IQU':3}
     for pol in runcase.values():
-        d,t,phi,pixs,hp_pixs,ground,ces_size=read_from_data('data/20120718_093931.hdf5',pol=pol)
+        d,t,phi,pixs,hp_pixs,ground,ces_size=read_from_data('data/20120718_093931.hdf5',pol=pol,npairs=4)
         nt,npix,nb=len(d),len(hp_pixs),len(t)
         print nt,npix,nb,len(hp_pixs[pixs])
         nside=128
         pr=profile_run()
 
         P=SparseLO(npix,nt,pixs,phi,pol=pol)
-        A=P.T*P
-        x0=np.zeros(npix*pol)
+        #A=P.T*P
+        #x0=np.zeros(npix*pol)
         Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
         if pol==1:
             fname='data/map_BD_i_cmb_'+str(nside)+'.fits'
@@ -33,9 +33,11 @@ def test_block_diagonal_precond_onto_real_data():
         elif pol==3:
             fname='data/map_BD_iqu_cmb_'+str(nside)+'.fits'
             inm=hp.read_map('data/cmb_r0.2_3.5arcmin_128.fits',field=[0,1,2])
-
-
+        print len(Mbd.mask),Mbd.mask,npix
         b=P.T*d
+        x=Mbd*b
+        print x[Mbd.mask]
+        """
 
 
 
@@ -58,7 +60,7 @@ def test_block_diagonal_precond_onto_real_data():
 
 
         #compare_maps(hp_map,inm,pol,'ra23',mask)
-
+        """
 
 
 def test_block_diagonal_precond_plus_noise_onto_real_data():
