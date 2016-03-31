@@ -710,7 +710,7 @@ class CoarseLO(lp.LinearOperator):
         eigenvals,W=eigh(E)
         lambda_max=max(eigenvals)
         diags=eigenvals*0.
-        print abs(eigenvals/lambda_max)
+        #print abs(eigenvals/lambda_max)
         threshold_to_degen=1.e-5
         nondegenerate=np.where(abs(eigenvals/lambda_max)>threshold_to_degen)[0]
         degenerate=np.where(abs(eigenvals/lambda_max)<threshold_to_degen)[0]
