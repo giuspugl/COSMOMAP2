@@ -3,6 +3,8 @@ import numpy as np
 import linop.linop as lp
 import blkop as blk
 import random as rd
+from scipy import weave
+from scipy.weave import inline
 import scipy.sparse.linalg as spla
 from utilities import *
 
@@ -86,9 +88,24 @@ class SparseLO(lp.LinearOperator):
 
         """
         x=np.zeros(self.nrows)
+        Nrows=self.nrows
+        pixs=self.pairs
 
-        for i,j in np.ndenumerate(self.pairs):
-            x[i]+=v[j]
+        code = r"""
+	    int i;
+        for (i=0;i<Nrows;++i){
+            x(i)+= v(pixs(i)) ;
+            }
+        """
+        res = inline(code,['pixs','v','x','Nrows'],verbose=1,
+		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		            support_code = r"""
+	                   #include <stdio.h>
+                       #include <omp.h>
+	                   #include <math.h>""",
+                       libraries=['gomp'],type_converters=weave.converters.blitz)
+        #for i,j in np.ndenumerate(self.pairs):
+        #    x[i]+=v[j]
 
         return x
 
@@ -98,8 +115,24 @@ class SparseLO(lp.LinearOperator):
 
         """
         x=np.zeros(self.ncols)
-        for i,j in np.ndenumerate(self.pairs):
-            x[j]+=v[i]
+        Nrows=self.nrows
+        pixs=self.pairs
+        code = """
+	       int i ;
+           for ( i=0;i<Nrows;++i){
+            x(pixs(i))+=v(i);
+            }
+        """
+        inline(code,['pixs','v','x','Nrows'],verbose=1,
+		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		            support_code = r"""
+	                   #include <stdio.h>
+                       #include <omp.h>
+	                   #include <math.h>""",
+                       libraries=['gomp'],type_converters=weave.converters.blitz)
+        #for i,j in np.ndenumerate(self.pairs):
+        #    x[j]+=v[i]
+
 
         return x
     def mult_qu(self,v):
@@ -112,21 +145,53 @@ class SparseLO(lp.LinearOperator):
             d_t=  Q_p \cos(2\phi_t)+ U_p \sin(2\phi_t).
         """
         x=np.zeros(self.nrows)
-        indices=np.arange(self.nrows,dtype='int32')
-        for index,pix,cos,sin in zip(indices,self.pairs,self.cos,self.sin):
-            x[index]+=v[2*pix]*cos+v[2*pix+1]*sin
 
+        #indices=np.arange(self.nrows,dtype='int32')
+        #for index,pix,cos,sin in zip(indices,self.pairs,self.cos,self.sin):
+        #    x[index]+=v[2*pix]*cos+v[2*pix+1]*sin
+        Nrows=self.nrows
+        pixs=self.pairs
+        cos,sin=self.cos,self.sin
+        code = """
+	       int i ;
+           for ( i=0;i<Nrows;++i){
+            x(i)+=v(2*pixs(i)) *cos(i) + v(2*pixs(i)+1) *sin(i);
+            }
+        """
+        inline(code,['pixs','v','x','Nrows','cos','sin'],verbose=1,
+		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		      support_code = r"""
+	               #include <stdio.h>
+                   #include <omp.h>
+	               #include <math.h>""",
+              libraries=['gomp'],type_converters=weave.converters.blitz)
         return x
 
     def rmult_qu(self,v):
         """
         Performs :math:`A^T * v`. The output vector will be a QU-map-like array.
         """
-        vec_out=np.zeros(self.ncols*self.pol)
-        for vec_in,pix,cos,sin in zip(v,self.pairs,self.cos,self.sin):
-            vec_out[2*pix]  +=   (vec_in* cos)
-            vec_out[1+2*pix]+=   (vec_in*sin)
-
+        vec_out= np.zeros(self.ncols*self.pol)
+        #for vec_in,pix,cos,sin in zip(v,self.pairs,self.cos,self.sin):
+        #    vec_out[2*pix]  +=   (vec_in* cos)
+        #    vec_out[1+2*pix]+=   (vec_in*sin)
+        Nrows=self.nrows
+        pixs=self.pairs
+        cos,sin=self.cos,self.sin
+        code = """
+	       int i;
+           for ( i=0;i<Nrows;++i){
+            vec_out(2*pixs(i)) += v(i)*cos(i);
+            vec_out(2*pixs(i)+1) += v(i)*sin(i);
+            }
+        """
+        inline(code,['pixs','v','vec_out','Nrows','cos','sin'],verbose=1,
+		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		      support_code = r"""
+	               #include <stdio.h>
+                   #include <omp.h>
+	               #include <math.h>""",
+              libraries=['gomp'],type_converters=weave.converters.blitz)
         return vec_out
 
 
@@ -147,10 +212,28 @@ class SparseLO(lp.LinearOperator):
             :math:`\phi_t`.
         """
         x=np.zeros(self.nrows)
-        indices=np.arange(self.nrows,dtype='int32')
-        for i,pix,cos,sin in zip(indices,self.pairs,self.cos,self.sin):
-            x[i]+=(v[3*pix]+v[3*pix+1]*cos + v[3*pix+2]*sin)
 
+        #indices=np.arange(self.nrows,dtype='int32')
+        #for i,pix,cos,sin in zip(indices,self.pairs,self.cos,self.sin):
+        #    x[i]+=(v[3*pix]+v[3*pix+1]*cos + v[3*pix+2]*sin)
+        Nrows=self.nrows
+        pixs=self.pairs
+        cos,sin=self.cos,self.sin
+        #print pixs[100]
+        code = r"""
+	       int i ;
+           //printf("%d\n",pixs(100));
+           for ( i=0;i<Nrows;++i){
+            x(i) +=  v(3*pixs(i)) + v(3*pixs(i)+1) *cos(i) + v(3*pixs(i)+2) *sin(i);
+            }
+        """
+        inline(code,['pixs','v','x','Nrows','cos','sin'],verbose=1,
+		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		      support_code = r"""
+	               #include <stdio.h>
+                   #include <omp.h>
+	               #include <math.h>""",
+              libraries=['gomp'],type_converters=weave.converters.blitz)
         return x
 
     def rmult_iqu(self,v):
@@ -161,11 +244,29 @@ class SparseLO(lp.LinearOperator):
 
         """
         x=np.zeros(self.ncols*self.pol)
-        zipped_arrs=zip(v,self.pairs,self.cos,self.sin)
-        for vec_in,pix,cos,sin in zip(v,self.pairs,self.cos,self.sin):
-            x[3*pix]    +=    vec_in
-            x[1+3*pix]  +=   (vec_in*cos)
-            x[2+3*pix]  +=   (vec_in*sin)
+        #zipped_arrs=zip(v,self.pairs,self.cos,self.sin)
+        #for vec_in,pix,cos,sin in zip(v,self.pairs,self.cos,self.sin):
+        #    x[3*pix]    +=    vec_in
+        #    x[1+3*pix]  +=   (vec_in*cos)
+        #    x[2+3*pix]  +=   (vec_in*sin)
+        N=self.nrows
+        pixs=self.pairs
+        cos,sin=self.cos,self.sin
+        code = """
+	       int i;
+           for ( i=0;i<N;++i){
+            x(3*pixs(i))   += v(i);
+            x(3*pixs(i)+1) += v(i)*cos(i);
+            x(3*pixs(i)+2) += v(i)*sin(i);
+            }
+        """
+        inline(code,['pixs','v','x','N','cos','sin'],verbose=1,
+		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		      support_code = r"""
+	               #include <stdio.h>
+                   #include <omp.h>
+	               #include <math.h>""",
+              libraries=['gomp'],type_converters=weave.converters.blitz)
         return x
 
     def initializeweights(self,phi,w):

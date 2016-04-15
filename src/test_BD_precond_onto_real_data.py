@@ -36,6 +36,7 @@ def test_block_diagonal_precond_onto_real_data():
         print len(Mbd.mask),Mbd.mask,npix
         b=P.T*d
         x=Mbd*b
+        show_matrix_form(Mbd*P.T*P)
         print x[Mbd.mask]
         """
 

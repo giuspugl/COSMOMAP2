@@ -71,7 +71,7 @@ def test_preconditioner_times_matrix_gives_identity():
     """
     runcase={'IQU':3,'I':1,'QU':2}
     for pol in runcase.values():
-        for nt in xrange(2000,2001):
+        for nt in xrange(20000,20001):
             phi=angles_gen(2.,nt)
             a=[10,50,100]
             for i in a:
