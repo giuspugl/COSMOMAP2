@@ -1,8 +1,8 @@
 import numpy as np
 from interfaces import *
-
+filter_warnings("ignore")
 def test_subscan_filtering():
-    
+
     """
     Test the action of the :class:`FilterLO`.
     """

@@ -82,6 +82,6 @@ def test_eigenvalue_routine_for_symmetric_matrix():
 
 
 
-
+filter_warnings("ignore")
 #test_arnoldi_algorithm()
 #test_eigenvalue_routine_for_symmetric_matrix()

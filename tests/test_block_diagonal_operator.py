@@ -31,9 +31,10 @@ def test_block_diagonal_operator():
                 assert np.allclose(y,y2)
 
                 # invMbd*Mbd = Identity
-                
+
                 v=Mbd*invMbd*x
                 assert np.allclose(v,x)
 
+filter_warnings("ignore")
 
 #test_block_diagonal_operator()

@@ -39,5 +39,5 @@ def test_coarse_operator():
         v2=np.dot(E,invE*v)
         y2=la.solve(E,v)
         assert np.allclose(v,v2) and np.allclose(y2,y)
-
+filter_warnings("ignore")
 #test_coarse_operator()

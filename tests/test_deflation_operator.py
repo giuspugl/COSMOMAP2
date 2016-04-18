@@ -46,5 +46,5 @@ def test_deflation_operator():
         s=Zd.H*x
 
         assert np.allclose(y2,y) and np.allclose(s2,s)
-
+filter_warnings("ignore")
 #test_deflation_operator()

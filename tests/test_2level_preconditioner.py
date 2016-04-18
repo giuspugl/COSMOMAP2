@@ -54,5 +54,5 @@ def test_2level_preconditioner():
             assert (np.allclose(M2*A*Z[:,i],Z[:,i]) and norm2(R*A*Z[:,i])<=1.e-10)
             x,info=spla.cg(M2*A,Z[:,i],tol=tol,maxiter=2)
             assert info==0
-
+filter_warnings("ignore")
 #test_2level_preconditioner()

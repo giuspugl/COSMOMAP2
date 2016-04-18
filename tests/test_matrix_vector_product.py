@@ -2,7 +2,7 @@ from interfaces import *
 from utilities import *
 import numpy as np
 import matplotlib.pyplot as plt
-
+filter_warnings("ignore")
 def test_matrix_vector_product():
     """
     test the matrix vector multiplication of A and A^T.

@@ -151,3 +151,4 @@ class TestCoarseOperator_IQU():
         evals=la.eigvalsh(invE)
         k= max(evals)/min(evals)
         assert ( abs(k)<=1.e3)
+filter_warnings("ignore")

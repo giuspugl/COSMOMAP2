@@ -10,17 +10,17 @@ def test_SPD_properties_block_diagonal_preconditioner():
     the explicit inverse of the matrix ``P.T*N*P``.
     """
     # input  from file, nt and np fixed
-    pol=3
+    nb=6
+    blocksize=2*[500,400,124]
+    nt=sum(blocksize)
+    npix=64
     runcase={'I':1,'QU':2,'IQU':3}
     for pol in runcase.values():
-        d,weight,phi,pairs,hp_pixs,ground,ces_size=read_from_data('data/20120718_093931.hdf5',pol=pol,npairs=4)
-        nt,npix,nb=len(d),len(hp_pixs),len(weight)
+        d,pairs,phi,t,diag=system_setup(nt,npix,nb)
         #construct the block diagonal operator
-        blocksize=nt/nb
-        N=BlockLO(blocksize,weight,offdiag=False)
+        N=BlockLO(blocksize,diag,offdiag=False)
         P=SparseLO(npix,nt,pairs,phi,pol=pol,w=N.diag)
         randarray=np.random.rand(pol*npix)
-        print P.T*d
         A=P.T*N*P
         assert  np.allclose(A*randarray, A.T *randarray)
         assert scalprod(randarray,A*randarray)>0.
@@ -31,4 +31,4 @@ def test_SPD_properties_block_diagonal_preconditioner():
 
 filter_warnings("ignore")
 
-#test_SPD_properties_block_diagonal_preconditioner()
+test_SPD_properties_block_diagonal_preconditioner()

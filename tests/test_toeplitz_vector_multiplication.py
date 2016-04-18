@@ -2,7 +2,7 @@ from interfaces import *
 from utilities import *
 import numpy as np
 
-
+filter_warnings("ignore")
 def test_toeplitz_vector_product():
     """
     test matrix vector multiplication of A^T N^{-1} A
@@ -71,6 +71,6 @@ def test_different_block_size():
         z2=P.T*N*P*x
         assert np.allclose(z2,z)
 
-test_different_block_size()
-test_toeplitz_vector_product()
-test_toeplitzband_vector_product()
+#test_different_block_size()
+#test_toeplitz_vector_product()
+#test_toeplitzband_vector_product()
