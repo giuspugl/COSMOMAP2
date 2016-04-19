@@ -97,5 +97,5 @@ def test_preconditioner_times_matrix_gives_identity():
 
 
 #test_matrix_vector_product()
-#test_preconditioner_times_matrix_gives_identity()
+test_preconditioner_times_matrix_gives_identity()
 #test_explicit_implementation_blockdiagonal_preconditioner()

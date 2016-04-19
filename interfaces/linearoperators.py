@@ -337,10 +337,7 @@ class SparseLO(lp.LinearOperator):
             lambda_max=tr/2. + sqrt
             lambda_min=tr/2. - sqrt
             cond_num=np.abs(lambda_max/lambda_min)
-            mask=np.where(cond_num<=1.e3)[0]
-            #self.cos2[mask]/=det[mask]
-            #self.sin2[mask]/=det[mask]
-            #self.sincos[mask]/=det[mask]
+            mask=np.where(cond_num<=self.threshold)[0]
             self.det=det
             self.mask=mask
 
@@ -368,12 +365,12 @@ class SparseLO(lp.LinearOperator):
             lambda_min=Tr_block/2. - sqrt
             cond_num=np.abs(lambda_max/lambda_min)
             mask1=np.where(self.counts>2)[0]
-            mask=np.where(cond_num<=1.e2 )[0]
+            mask=np.where(cond_num<=self.threshold )[0]
             self.mask=np.intersect1d(mask1,mask)
 
 
 
-    def __init__(self,n,m,obs_pixs,phi=None,pol=1,w=None):
+    def __init__(self,n,m,obs_pixs,phi=None,pol=1,w=None,threshold_cond=1.e3):
         if w is None:
             w=np.ones(m)
 
@@ -381,6 +378,7 @@ class SparseLO(lp.LinearOperator):
         self.pol=pol
         self.nrows=m
         self.pairs=obs_pixs
+        self.threshold=threshold_cond
         self.initializeweights(phi,w)
 
         if pol==3:
