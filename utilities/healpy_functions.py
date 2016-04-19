@@ -101,26 +101,26 @@ def show_map(outm,pol,patch,figname=None):
         unseen=np.where(outm ==0)[0]
         outm[unseen]=hp.UNSEEN
         hp.gnomview(outm,rot=coords,xsize=600,title='I map')
-        hp.graticule(dpar=5,dmer=5,local=True)
+        #hp.graticule(dpar=5,dmer=5,local=True)
     elif pol==2:
         unseen=np.where(outm[0]==0)[0]
         outm[0][unseen]=hp.UNSEEN
         hp.gnomview(outm[0],rot=coords,xsize=600,title='Q map',sub=121)
-        hp.graticule(dpar=5,dmer=5,local=True)
+        #hp.graticule(dpar=5,dmer=5,local=True)
         outm[1][unseen]=hp.UNSEEN
         hp.gnomview(outm[1],rot=coords,xsize=600,title='U map',sub=122)
-        hp.graticule(dpar=5,dmer=5,local=True)
+        #hp.graticule(dpar=5,dmer=5,local=True)
     elif pol==3:
         unseen=np.where(outm[0]==0)[0]
         outm[0][unseen]=hp.UNSEEN
         hp.gnomview(outm[0],rot=coords,xsize=600,title='I map',sub=131)
-        hp.graticule(dpar=5,dmer=5,local=True)
+        #hp.graticule(dpar=5,dmer=5,local=True)
         outm[1][unseen]=hp.UNSEEN
         hp.gnomview(outm[1],rot=coords,xsize=600,title='Q map',sub=132)
-        hp.graticule(dpar=5,dmer=5,local=True)
+        #hp.graticule(dpar=5,dmer=5,local=True)
         outm[2][unseen]=hp.UNSEEN
         hp.gnomview(outm[2],rot=coords,xsize=600,title='U map',sub=133)
-        hp.graticule(dpar=5,dmer=5,local=True)
+        #hp.graticule(dpar=5,dmer=5,local=True)
 
     if figname is None:
         plt.show()
@@ -162,13 +162,13 @@ def compare_maps(outm,inm,pol,patch,mask,figname=None,remove_offset=True):
         inm[unseen]=hp.UNSEEN
         outm[unseen]=hp.UNSEEN
         hp.gnomview(inm,rot=coords,xsize=600,min=minval,max=maxval,title='I input map',sub=131)
-        hp.graticule(dpar=5,dmer=5,local=True)
+        #hp.graticule(dpar=5,dmer=5,local=True)
         hp.gnomview(outm,rot=coords,xsize=600,min=minval,max=maxval,title='I output',sub=132)
-        hp.graticule(dpar=5,dmer=5,local=True)
+        #hp.graticule(dpar=5,dmer=5,local=True)
         diff=inm-outm
         diff[unseen]=hp.UNSEEN
         hp.gnomview(diff,rot=coords,xsize=600,title='I diff',sub=133,norm='hist')
-        hp.graticule(dpar=5,dmer=5,local=True)
+        #hp.graticule(dpar=5,dmer=5,local=True)
 
     elif pol==3:
         strnmap=['I','Q','U']
@@ -179,15 +179,15 @@ def compare_maps(outm,inm,pol,patch,mask,figname=None,remove_offset=True):
             inm[i][unseen]=hp.UNSEEN
             outm[i][unseen]=hp.UNSEEN
             hp.gnomview(inm[i],rot=coords,xsize=600,min=minval,max=maxval,title=strnmap[i]+' input map',sub=figcount)
-            hp.graticule(dpar=5,dmer=5,local=True)
+            #hp.graticule(dpar=5,dmer=5,local=True)
             figcount+=1
             hp.gnomview(outm[i],rot=coords,xsize=600,min=minval,max=maxval,title=strnmap[i]+' output map',sub=figcount)
-            hp.graticule(dpar=5,dmer=5,local=True)
+            #hp.graticule(dpar=5,dmer=5,local=True)
             figcount+=1
             diff=inm[i]-outm[i]
             diff[unseen]=hp.UNSEEN
             hp.gnomview((diff),rot=coords,xsize=600,title=strnmap[i]+' diff',sub=figcount,norm='hist')
-            hp.graticule(dpar=5,dmer=5,local=True)
+            #hp.graticule(dpar=5,dmer=5,local=True)
             figcount+=1
 
     elif pol==2:
@@ -199,15 +199,15 @@ def compare_maps(outm,inm,pol,patch,mask,figname=None,remove_offset=True):
             inm[i][unseen]=hp.UNSEEN
             outm[i][unseen]=hp.UNSEEN
             hp.gnomview(inm[i],rot=coords,xsize=600,min=minval,max=maxval,title=strnmap[i]+' input map',sub=figcount)
-            hp.graticule(dpar=5,dmer=5,local=True)
+            #hp.graticule(dpar=5,dmer=5,local=True)
             figcount+=1
             hp.gnomview(outm[i],rot=coords,xsize=600,min=minval,max=maxval,title=strnmap[i]+' output map',sub=figcount)
-            hp.graticule(dpar=5,dmer=5,local=True)
+            #hp.graticule(dpar=5,dmer=5,local=True)
             figcount+=1
             diff=inm[i]-outm[i]
             diff[unseen]=hp.UNSEEN
             hp.gnomview((diff),rot=coords,xsize=600,title=strnmap[i]+' diff',sub=figcount,norm='hist')
-            hp.graticule(dpar=5,dmer=5,local=True)
+            #hp.graticule(dpar=5,dmer=5,local=True)
             figcount+=1
 
     if figname is None:

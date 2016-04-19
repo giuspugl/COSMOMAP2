@@ -75,6 +75,9 @@ class SparseLO(lp.LinearOperator):
         array with noise weights , :math:`w_t= N^{-1} _{tt}`, computed by
         :func:`BlockLO.build_blocks`.   If it is  not set :func:`SparseLO.initializeweights`
         assumes it to be a :func:`numpy.ones` array.
+    - ``threshold_cond``: {float}
+        set the treshold to mask bad conditioned pixels (it's used in polarization cases).
+        Default is set to 1.e3.
 
     """
 
@@ -192,6 +195,8 @@ class SparseLO(lp.LinearOperator):
                    #include <omp.h>
 	               #include <math.h>""",
               libraries=['gomp'],type_converters=weave.converters.blitz)
+        for i in self.mask:
+            vec_out[self.pol*i:self.pol*i+self.pol]=0.
         return vec_out
 
 
@@ -267,6 +272,9 @@ class SparseLO(lp.LinearOperator):
                    #include <omp.h>
 	               #include <math.h>""",
               libraries=['gomp'],type_converters=weave.converters.blitz)
+
+        for i in self.mask:
+            x[self.pol*i:self.pol*i+self.pol]=0.
         return x
 
     def initializeweights(self,phi,w):
@@ -281,6 +289,8 @@ class SparseLO(lp.LinearOperator):
         - ``mask``:
           mask from  either unobserved pixels (``counts=0``)  or   bad constrained
           (see the ``pol=3,2`` following cases) ;
+        - ``obspix``:
+            observed pixels
         - *If* ``pol=2``:
             the matrix :math:`(A^T A)`  is  symmetric and block-diagonal, each block
             can be written as :
@@ -319,7 +329,7 @@ class SparseLO(lp.LinearOperator):
             self.counts=np.zeros(self.ncols)
             for j,weight in zip(self.pairs,w):
                 self.counts[j]+=weight
-            self.mask=np.where(self.counts !=0)[0]
+            self.obspix=np.where(self.counts !=0)[0]
 
         if self.pol==2:
             self.cos=np.cos(2.*phi)
@@ -339,7 +349,7 @@ class SparseLO(lp.LinearOperator):
             cond_num=np.abs(lambda_max/lambda_min)
             mask=np.where(cond_num<=self.threshold)[0]
             self.det=det
-            self.mask=mask
+            self.obspix=mask
 
         if self.pol==3:
             self.cos=np.cos(2.*phi)
@@ -366,8 +376,14 @@ class SparseLO(lp.LinearOperator):
             cond_num=np.abs(lambda_max/lambda_min)
             mask1=np.where(self.counts>2)[0]
             mask=np.where(cond_num<=self.threshold )[0]
-            self.mask=np.intersect1d(mask1,mask)
+            self.obspix=np.intersect1d(mask1,mask)
 
+        self.mask=[]
+        for i in xrange(self.ncols):
+            if i in self.obspix:
+                continue
+            else :
+                self.mask.append(i)
 
 
     def __init__(self,n,m,obs_pixs,phi=None,pol=1,w=None,threshold_cond=1.e3):
@@ -562,18 +578,18 @@ class BlockDiagonalLO(lp.LinearOperator):
         self.pol=pol
         super(BlockDiagonalLO, self).__init__(nargin=self.size,nargout=self.size,\
                                                 matvec=self.mult, symmetric=True)
-        self.mask=A.mask
+        self.mask=A.obspix
         if pol==1 :
             self.counts=A.counts
         if pol==2 or pol==3:
 
-            self.sin2=A.sin2[A.mask]
-            self.sincos=A.sincos[A.mask]
-            self.cos2=A.cos2[A.mask]
+            self.sin2=A.sin2[A.obspix]
+            self.sincos=A.sincos[A.obspix]
+            self.cos2=A.cos2[A.obspix]
         if pol==3:
-            self.counts=A.counts[A.mask]
-            self.cos=A.cosine[A.mask]
-            self.sin=A.sine[A.mask]
+            self.counts=A.counts[A.obspix]
+            self.cos=A.cosine[A.obspix]
+            self.sin=A.sine[A.obspix]
 
     def mult(self,x):
         """
@@ -655,22 +671,22 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
     def __init__(self,A,n,pol=1):
 
         self.size=pol*n
-        self.mask=A.mask
+        self.mask=A.obspix
         self.pol=pol
         if pol==1 :
             self.counts=A.counts
         elif pol==2:
-            self.det=A.det[A.mask]
-            self.sin2=A.sin2[A.mask]
-            self.cos2=A.cos2[A.mask]
-            self.sincos=A.sincos[A.mask]
+            self.det=A.det[A.obspix]
+            self.sin2=A.sin2[A.obspix]
+            self.cos2=A.cos2[A.obspix]
+            self.sincos=A.sincos[A.obspix]
         elif pol==3:
-            self.counts=A.counts[A.mask]
-            self.sin2=A.sin2[A.mask]
-            self.cos2=A.cos2[A.mask]
-            self.sincos=A.sincos[A.mask]
-            self.cos=A.cosine[A.mask]
-            self.sin=A.sine[A.mask]
+            self.counts=A.counts[A.obspix]
+            self.sin2=A.sin2[A.obspix]
+            self.cos2=A.cos2[A.obspix]
+            self.sincos=A.sincos[A.obspix]
+            self.cos=A.cosine[A.obspix]
+            self.sin=A.sine[A.obspix]
 
         super(BlockDiagonalPreconditionerLO,self).__init__(nargin=self.size,nargout=self.size,\
                                                             matvec=self.mult, symmetric=True)
