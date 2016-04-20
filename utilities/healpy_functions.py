@@ -7,7 +7,7 @@ if 'DISPLAY' not in os.environ:
 
 import matplotlib.pyplot as plt
 
-def  obspix2mask(obspix,pixs,nside,fname,write=False):
+def  obspix2mask(obspix,pixs,nside,fname=None):
     """
     From the observed pixels to a binary mask, (``mask[obspix]=1 , 0 elsewhere``)
 
@@ -31,12 +31,12 @@ def  obspix2mask(obspix,pixs,nside,fname,write=False):
     """
     mask=np.zeros(hp.nside2npix(nside))
     mask[obspix[pixs]]=1.
-    if write:
+    if not fname is None :
         hp.write_map(fname,mask)
 
     return mask
 
-def reorganize_map(mapin,obspix,npix,nside,pol,fname,write=False):
+def reorganize_map(mapin,obspix,npix,nside,pol,fname=None):
     """
     From the solution map of the preconditioner to a Healpix map.
     It specially split the input array ``mapin`` which is a IQU
@@ -89,37 +89,37 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname,write=False):
 
         healpix_map[obspix]=mapin
         hp_list=healpix_map
-    if write:
+    if not fname is None:
         hp.write_map(fname,hp_list)
 
     return hp_list
 
-def show_map(outm,pol,patch,figname=None):
+def show_map(outm,pol,patch,figname=None,norm='hist'):
     coord_dict={'ra23':[-13.45,-32.09]}
     coords=coord_dict[patch]
     if pol==1:
         unseen=np.where(outm ==0)[0]
         outm[unseen]=hp.UNSEEN
-        hp.gnomview(outm,rot=coords,xsize=600,title='I map')
+        hp.gnomview(outm,rot=coords,xsize=600,title='I map',norm=norm)
         #hp.graticule(dpar=5,dmer=5,local=True)
     elif pol==2:
         unseen=np.where(outm[0]==0)[0]
         outm[0][unseen]=hp.UNSEEN
-        hp.gnomview(outm[0],rot=coords,xsize=600,title='Q map',sub=121)
+        hp.gnomview(outm[0],rot=coords,xsize=600,title='Q map',sub=121,norm=norm)
         #hp.graticule(dpar=5,dmer=5,local=True)
         outm[1][unseen]=hp.UNSEEN
-        hp.gnomview(outm[1],rot=coords,xsize=600,title='U map',sub=122)
+        hp.gnomview(outm[1],rot=coords,xsize=600,title='U map',sub=122,norm=norm)
         #hp.graticule(dpar=5,dmer=5,local=True)
     elif pol==3:
         unseen=np.where(outm[0]==0)[0]
         outm[0][unseen]=hp.UNSEEN
-        hp.gnomview(outm[0],rot=coords,xsize=600,title='I map',sub=131)
+        hp.gnomview(outm[0],rot=coords,xsize=600,title='I map',sub=131,norm=norm)
         #hp.graticule(dpar=5,dmer=5,local=True)
         outm[1][unseen]=hp.UNSEEN
-        hp.gnomview(outm[1],rot=coords,xsize=600,title='Q map',sub=132)
+        hp.gnomview(outm[1],rot=coords,xsize=600,title='Q map',sub=132,norm=norm)
         #hp.graticule(dpar=5,dmer=5,local=True)
         outm[2][unseen]=hp.UNSEEN
-        hp.gnomview(outm[2],rot=coords,xsize=600,title='U map',sub=133)
+        hp.gnomview(outm[2],rot=coords,xsize=600,title='U map',sub=133,norm=norm)
         #hp.graticule(dpar=5,dmer=5,local=True)
 
     if figname is None:
@@ -142,7 +142,7 @@ def subtract_offset(mapp,obspix, pol):
 
     return mapp
 
-def compare_maps(outm,inm,pol,patch,mask,figname=None,remove_offset=True):
+def compare_maps(outm,inm,pol,patch,mask,figname=None,remove_offset=True,norm='hist'):
     """
     Print on device the input map,  the one processed from datastream
     and their difference.
@@ -167,7 +167,7 @@ def compare_maps(outm,inm,pol,patch,mask,figname=None,remove_offset=True):
         #hp.graticule(dpar=5,dmer=5,local=True)
         diff=inm-outm
         diff[unseen]=hp.UNSEEN
-        hp.gnomview(diff,rot=coords,xsize=600,title='I diff',sub=133,norm='hist')
+        hp.gnomview(diff,rot=coords,xsize=600,title='I diff',sub=133,norm=norm)
         #hp.graticule(dpar=5,dmer=5,local=True)
 
     elif pol==3:
@@ -186,7 +186,7 @@ def compare_maps(outm,inm,pol,patch,mask,figname=None,remove_offset=True):
             figcount+=1
             diff=inm[i]-outm[i]
             diff[unseen]=hp.UNSEEN
-            hp.gnomview((diff),rot=coords,xsize=600,title=strnmap[i]+' diff',sub=figcount,norm='hist')
+            hp.gnomview((diff),rot=coords,xsize=600,title=strnmap[i]+' diff',sub=figcount,norm=norm)
             #hp.graticule(dpar=5,dmer=5,local=True)
             figcount+=1
 
@@ -206,7 +206,7 @@ def compare_maps(outm,inm,pol,patch,mask,figname=None,remove_offset=True):
             figcount+=1
             diff=inm[i]-outm[i]
             diff[unseen]=hp.UNSEEN
-            hp.gnomview((diff),rot=coords,xsize=600,title=strnmap[i]+' diff',sub=figcount,norm='hist')
+            hp.gnomview((diff),rot=coords,xsize=600,title=strnmap[i]+' diff',sub=figcount,norm=norm)
             #hp.graticule(dpar=5,dmer=5,local=True)
             figcount+=1
 
