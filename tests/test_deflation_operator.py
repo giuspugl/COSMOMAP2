@@ -15,9 +15,12 @@ def test_deflation_operator():
     d,pairs,phi,t,diag=system_setup(nt,npix,nb)
 
     for pol in [1,2,3]:
-        x0=np.zeros(pol*npix)
         N=BlockLO(blocksize,t,offdiag=True)
         P=SparseLO(npix,nt,pairs,phi,pol=pol )
+        npix=P.ncols
+
+        x0=np.zeros(pol*npix)
+
         Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
         #print nb,nt,npix
         b=P.T*N*d

@@ -7,21 +7,18 @@ def test_matrix_vector_product():
     """
     test the matrix vector multiplication of A and A^T.
     """
-    pol=1
-    for nt in xrange(6,10):
-        phi=angles_gen(2.,nt)
-        for npix in xrange(5,nt ):
-            x=np.ones(pol*npix)
-            pairs=pairs_gen(nt,npix)
-            #print "obs_pixs\t",pairs
-            P=SparseLO(npix,nt,pairs,phi,pol=pol)
 
-            y=P*x
-            #print len(P.pairs),len(P.mask)
+    nt,npix=80,50
+    pairs=pairs_gen(nt,npix)
 
-            #print "A*x\n",y
-            y2=[x[j] for j in pairs]
-            assert np.allclose(y,y2)
+    #print "obs_pixs\t",pairs
+    P=SparseLO(npix,nt,pairs)
+    npix=P.ncols
+
+    x=np.ones(npix)
+    y=P.T*P*x
+    assert np.allclose(y,P.counts)
+
 
 def test_explicit_implementation_blockdiagonal_preconditioner():
     """
@@ -39,25 +36,25 @@ def test_explicit_implementation_blockdiagonal_preconditioner():
         a=[10,50,100,300,600]
         for i in a:
             npix=int(i)
-
             pairs=pairs_gen(nt,npix)
             P=SparseLO(npix,nt,pairs,phi,pol=pol)
+            npix=P.ncols
             x=np.ones(npix*pol)
             v=P.T*P*x
             v2=v*0.
             Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
             if pol==1:
-                v2[P.obspix]=v[P.obspix]/P.counts[P.obspix]
+                v2=v/P.counts
             elif pol==3:
-                for j,s2,c2,cs,s,c,hits in zip(P.obspix,Mbd.sin2,Mbd.cos2, Mbd.sincos,\
+                for j,s2,c2,cs,s,c,hits in zip(np.arange(npix),Mbd.sin2,Mbd.cos2, Mbd.sincos,\
                                                 Mbd.sin,Mbd.cos,Mbd.counts) :
                     matr=np.array([[hits,c,s],[c,c2,cs],[s,cs,s2]])
                     ainv=inv(matr)
                     v2[pol*j:pol*j+pol]=np.dot(ainv,v[pol*j:pol*j+pol])
             elif pol==2:
-
-                for j,s2,c2,cs,det in zip(P.obspix,Mbd.sin2,Mbd.cos2, Mbd.sincos,Mbd.det):
-                    ainv=np.array([[s2/det,-cs/det],[-cs/det,c2/det]])
+                for j,s2,c2,cs in zip(np.arange(npix),Mbd.sin2,Mbd.cos2, Mbd.sincos):
+                    matr =np.array([[c2,cs],[cs,s2]])
+                    ainv=inv(matr)
                     v2[pol*j:pol*j+pol]=np.dot(ainv,v[pol*j:pol*j+pol])
 
             v3=Mbd*v
@@ -78,6 +75,7 @@ def test_preconditioner_times_matrix_gives_identity():
                 npix=int(i)
                 pairs=pairs_gen(nt,npix)
                 P=SparseLO(npix,nt,pairs,phi,pol=pol)
+                npix=P.ncols
                 Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
                 if pol==1:
                     offset=0
@@ -87,46 +85,14 @@ def test_preconditioner_times_matrix_gives_identity():
                     offset=2
                 elif pol==2:
                     x=np.tile([0,1],(npix))
-
                     offset=1
 
                 v=Mbd*P.T*P*x
-                pixel_to_check=[ pol*i+offset for i in P.obspix]
+                #pixel_to_check=[ pol*i+offset for i in P.obspix]
+                #assert np.allclose(v[pixel_to_check],x[pixel_to_check])
+                assert np.allclose(v,x)
 
-                assert np.allclose(v[pixel_to_check],x[pixel_to_check])
 
-def test_contiguous_masked_pixels():
-    runcase={'IQU':3,'I':1,'QU':2}
-    #runcase={'I':1}
-
-    nt,nb,npix=30,1,10
-
-    for pol in runcase.values():
-        print pol
-        x=np.ones(pol*npix)
-        d,pairs,phi,t,diag=system_setup(nt,npix,nb)
-        P=SparseLO(npix,nt,pairs,phi,pol=pol)
-        Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
-        cfr=np.arange(npix)
-        m=np.zeros(npix)
-        vout=P.T*d
-        print P.obspix
-        print P.obspix
-        masked=[]
-
-        for i in xrange(npix):
-            if i in P.obspix:
-                continue
-            else :
-                masked.append(i)
-
-        for i in masked:
-            vout[pol*i:pol*i+pol]=0
-        print masked
-
-        assert np.allclose(P*vout,P*P.T*d)
-
-#test_contiguous_masked_pixels()
 #test_matrix_vector_product()
 #test_preconditioner_times_matrix_gives_identity()
 #test_explicit_implementation_blockdiagonal_preconditioner()

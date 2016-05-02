@@ -20,6 +20,7 @@ def test_SPD_properties_block_diagonal_preconditioner():
         #construct the block diagonal operator
         N=BlockLO(blocksize,diag,offdiag=False)
         P=SparseLO(npix,nt,pairs,phi,pol=pol,w=N.diag)
+        npix=P.ncols
         randarray=np.random.rand(pol*npix)
         A=P.T*N*P
         assert  np.allclose(A*randarray, A.T *randarray)

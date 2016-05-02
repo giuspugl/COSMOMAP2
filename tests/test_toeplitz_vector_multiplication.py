@@ -17,6 +17,8 @@ def test_toeplitz_vector_product():
         d,pairs,phi,t,diag=system_setup(nt,npix,nb)
         N=BlockLO(blocksize,diag,offdiag=False )
         P=SparseLO(npix,nt,pairs,phi=phi,pol=pol, w=N.diag)
+        npix=P.ncols
+
         x=np.ones(pol*npix)
 
         y=P*x
@@ -36,7 +38,6 @@ def test_toeplitzband_vector_product():
     nt=sum(blocksize)
     print blocksize
     npix=64
-    runcase={'I':1}
     runcase={'I':1,'QU':2,'IQU':3}
     for pol in runcase.values():
         d,pairs,phi,t,diag=system_setup(nt,npix,nb)
@@ -65,6 +66,8 @@ def test_different_block_size():
         d,pairs,phi,t,diag=system_setup(nt,npix,nb)
         N=BlockLO(blocksize,diag)
         P=SparseLO(npix,nt,pairs,phi=phi,pol=pol, w=N.diag)
+        npix=P.ncols
+
         x=np.ones(pol*npix)
         PtNP=BlockDiagonalLO(P,npix,pol=pol)
         z=PtNP*x

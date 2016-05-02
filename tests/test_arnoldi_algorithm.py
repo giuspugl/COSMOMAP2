@@ -48,9 +48,10 @@ def test_eigenvalue_routine_for_symmetric_matrix():
     nt,npix,nb=400,60,1
     blocksize=nt/nb
     d,pairs,phi,t,diag=system_setup(nt,npix,nb)
-    x0=np.zeros(pol*npix)
     N=BlockLO(blocksize,t,offdiag=True)
     P=SparseLO(npix,nt,pairs,phi,pol=pol,w=None )
+    npix=P.ncols
+    x0=np.zeros(pol*npix)
     Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
     #print nb,nt,npix
 

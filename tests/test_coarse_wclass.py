@@ -24,6 +24,7 @@ class TestCoarseOperator_I():
         d,pairs,phi,t,diag=self.data
         N   =   BlockLO(blocksize,t,offdiag=True)
         P   =   SparseLO(self.npix,self.nt,pairs,phi,pol)
+        self.npix=P.ncols
         B   =   BlockDiagonalLO(P,self.npix,pol=pol)
         Mbd =   BlockDiagonalPreconditionerLO(P,self.npix,pol=pol)
         A   =   P.T*N*P
@@ -73,6 +74,7 @@ class TestCoarseOperator_QU():
         d,pairs,phi,t,diag=self.data
         N   =   BlockLO(blocksize,t,offdiag=True)
         P   =   SparseLO(self.npix,self.nt,pairs,phi,pol)
+        self.npix=P.ncols
         B   =   BlockDiagonalLO(P,self.npix,pol=pol)
         Mbd =   BlockDiagonalPreconditionerLO(P,self.npix,pol=pol)
         A   =   P.T*N*P
@@ -121,6 +123,7 @@ class TestCoarseOperator_IQU():
         d,pairs,phi,t,diag=self.data
         N   =   BlockLO(blocksize,t,offdiag=True)
         P   =   SparseLO(self.npix,self.nt,pairs,phi,pol)
+        self.npix=P.ncols
         B   =   BlockDiagonalLO(P,self.npix,pol=pol)
         Mbd =   BlockDiagonalPreconditionerLO(P,self.npix,pol=pol)
         A   =   P.T*N*P

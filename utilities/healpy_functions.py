@@ -111,7 +111,7 @@ def show_map(outm,pol,patch,figname=None,norm='hist'):
         hp.gnomview(outm[1],rot=coords,xsize=600,title='U map',sub=122,norm=norm)
         #hp.graticule(dpar=5,dmer=5,local=True)
     elif pol==3:
-        unseen=np.where(outm[0]==0)[0]
+        unseen=np.where(outm[1]==0)[0]
         outm[0][unseen]=hp.UNSEEN
         hp.gnomview(outm[0],rot=coords,xsize=600,title='I map',sub=131,norm=norm)
         #hp.graticule(dpar=5,dmer=5,local=True)

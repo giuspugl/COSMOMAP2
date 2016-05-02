@@ -18,9 +18,10 @@ def test_block_diagonal_operator():
             for i in a:
                 #print pol*i,nt
                 npix=int(i)
-                x=np.ones(pol*npix)
                 d,pairs,phi,t,diag=system_setup(nt,npix,nb)
+                x=np.ones(pol*npix)
                 P=SparseLO(npix,nt,pairs,phi,pol=pol)
+                npix=P.ncols
                 Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
                 invMbd=BlockDiagonalLO(P,npix,pol=pol)
                 #invMbd and P.T*P  operate in the same on to a pixel vector

@@ -16,8 +16,9 @@ def test_2level_preconditioner():
     N=BlockLO(blocksize,t,offdiag=True)
     runcase={'I':1,'QU':2,'IQU':3}
     for pol in runcase.values():
-        x0=np.ones(pol*npix)
         P=SparseLO(npix,nt,pairs,phi,pol=pol )
+        npix=P.ncols
+        x0=np.ones(pol*npix)
         #M=InverseLO(P.T*diagN*P,method=spla.cg)
         M=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
         tol=1.e-4

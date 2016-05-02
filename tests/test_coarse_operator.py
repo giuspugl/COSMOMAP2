@@ -13,8 +13,9 @@ def test_coarse_operator():
     c=bash_colors()
     for pol in [1,2,3]:
 
-        x0=np.zeros(pol*npix)
         P=SparseLO(npix,nt,pairs,phi,pol)
+        npix=P.ncols
+        x0=np.zeros(pol*npix)
         N=BlockLO(blocksize,t,offdiag=True)
         Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
         b=P.T*N*d

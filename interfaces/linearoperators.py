@@ -31,6 +31,22 @@ class FilterLO(lp.LinearOperator):
                 start=offset
                 end=start + i
                 offset+=i
+                
+                code = r"""
+        	    int j;
+                for (j=start;j<end;++j){
+                    if (pixs(j) == -1) continue;
+                    x(i)+= v(pixs(i));
+                    }
+                """
+                res = inline(code,['pixs','v','x','Nrows'],verbose=1,
+        		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+        		            support_code = r"""
+        	                   #include <stdio.h>
+                               #include <omp.h>
+        	                   #include <math.h>""",
+                               libraries=['gomp'],type_converters=weave.converters.blitz)
+
                 vec_out[start:end ]=d[start:end] - np.mean(d[start:end])
 
         return vec_out
@@ -53,10 +69,12 @@ class SparseLO(lp.LinearOperator):
 
     .. note::
 
-        During its initialization,  a private member function :func:`initializeweights` is called
-        to precompute arrays needed for the explicit implementation of
+        During its initialization,  a private member function :func:`initializeweights`
+         is called to precompute arrays needed for the explicit implementation of
         :class:`interfaces.BlockDiagonalPreconditionerLO`.
-
+        Moreover it masks all the unobserved or pathological pixels which won't
+        be taken into account, via the functions   :func:`repixelization`  and
+        :func:`flagging_samples`.
 
     **Parameters**
 
@@ -64,21 +82,25 @@ class SparseLO(lp.LinearOperator):
         number of columns;
     - ``m`` : {int}
         number of rows;
-    - ``obs_pixs`` : {array}
-         pixels index ``j`` of the non-null elements of :math:`A_{i,j}`;
+    - ``pix_samples`` : {array}
+        list of pixels observed in the time domain,
+        (or the non-null elements in a row of :math:`A_{i,j}`);
     - ``pol`` : {int,[*default* `pol=1`]}
         process an intensity only (``pol=1``), polarization only ``pol=2``
-         and intensity+polarization map (``pol=3``);
+        and intensity+polarization map (``pol=3``);
     - `phi`: {array, [*default* `None`]}
-        array with polarization angles (if ``pol=3,2``).
+        array with polarization angles (needed if ``pol=3,2``).
     - ``w``: {array, [*default* `None`]}
         array with noise weights , :math:`w_t= N^{-1} _{tt}`, computed by
         :func:`BlockLO.build_blocks`.   If it is  not set :func:`SparseLO.initializeweights`
         assumes it to be a :func:`numpy.ones` array.
+    - ``pixel_schema``:{array}
+        Map from the internal pixelization to an external one, i.e. HEALPIX, it has to be modified when
+        pathological pixels are not taken into account.
+        Default is :func:`numpy.arange(npix)`, i.e. identity map;
     - ``threshold_cond``: {float}
-        set the treshold to mask bad conditioned pixels (it's used in polarization cases).
+        set the condition number threshold to mask bad conditioned pixels (it's used in polarization cases).
         Default is set to 1.e3.
-
     """
 
     def mult(self,v):
@@ -93,11 +115,11 @@ class SparseLO(lp.LinearOperator):
         x=np.zeros(self.nrows)
         Nrows=self.nrows
         pixs=self.pairs
-
         code = r"""
 	    int i;
         for (i=0;i<Nrows;++i){
-            x(i)+= v(pixs(i)) ;
+            if (pixs(i) == -1) continue;
+            x(i)+= v(pixs(i));
             }
         """
         res = inline(code,['pixs','v','x','Nrows'],verbose=1,
@@ -107,11 +129,7 @@ class SparseLO(lp.LinearOperator):
                        #include <omp.h>
 	                   #include <math.h>""",
                        libraries=['gomp'],type_converters=weave.converters.blitz)
-        #for i,j in np.ndenumerate(self.pairs):
-        #    x[i]+=v[j]
-
         return x
-
     def rmult(self,v):
         """
         Performs the product for the transpose operator :math:`A^T`.
@@ -120,9 +138,10 @@ class SparseLO(lp.LinearOperator):
         x=np.zeros(self.ncols)
         Nrows=self.nrows
         pixs=self.pairs
-        code = """
+        code = r"""
 	       int i ;
            for ( i=0;i<Nrows;++i){
+            if (pixs(i) == -1) continue;
             x(pixs(i))+=v(i);
             }
         """
@@ -133,9 +152,6 @@ class SparseLO(lp.LinearOperator):
                        #include <omp.h>
 	                   #include <math.h>""",
                        libraries=['gomp'],type_converters=weave.converters.blitz)
-        #for i,j in np.ndenumerate(self.pairs):
-        #    x[j]+=v[i]
-
 
         return x
     def mult_qu(self,v):
@@ -148,16 +164,13 @@ class SparseLO(lp.LinearOperator):
             d_t=  Q_p \cos(2\phi_t)+ U_p \sin(2\phi_t).
         """
         x=np.zeros(self.nrows)
-
-        #indices=np.arange(self.nrows,dtype='int32')
-        #for index,pix,cos,sin in zip(indices,self.pairs,self.cos,self.sin):
-        #    x[index]+=v[2*pix]*cos+v[2*pix+1]*sin
         Nrows=self.nrows
         pixs=self.pairs
         cos,sin=self.cos,self.sin
         code = """
 	       int i ;
            for ( i=0;i<Nrows;++i){
+            if (pixs(i) == -1) continue;
             x(i)+=v(2*pixs(i)) *cos(i) + v(2*pixs(i)+1) *sin(i);
             }
         """
@@ -169,21 +182,18 @@ class SparseLO(lp.LinearOperator):
 	               #include <math.h>""",
               libraries=['gomp'],type_converters=weave.converters.blitz)
         return x
-
     def rmult_qu(self,v):
         """
         Performs :math:`A^T * v`. The output vector will be a QU-map-like array.
         """
         vec_out= np.zeros(self.ncols*self.pol)
-        #for vec_in,pix,cos,sin in zip(v,self.pairs,self.cos,self.sin):
-        #    vec_out[2*pix]  +=   (vec_in* cos)
-        #    vec_out[1+2*pix]+=   (vec_in*sin)
         Nrows=self.nrows
         pixs=self.pairs
         cos,sin=self.cos,self.sin
         code = """
 	       int i;
            for ( i=0;i<Nrows;++i){
+            if (pixs(i) == -1) continue;
             vec_out(2*pixs(i)) += v(i)*cos(i);
             vec_out(2*pixs(i)+1) += v(i)*sin(i);
             }
@@ -195,11 +205,7 @@ class SparseLO(lp.LinearOperator):
                    #include <omp.h>
 	               #include <math.h>""",
               libraries=['gomp'],type_converters=weave.converters.blitz)
-        for i in self.mask:
-            vec_out[self.pol*i:self.pol*i+self.pol]=0.
         return vec_out
-
-
     def mult_iqu(self,v):
         """
         Performs the product of a sparse matrix :math:`Av`,\
@@ -217,18 +223,13 @@ class SparseLO(lp.LinearOperator):
             :math:`\phi_t`.
         """
         x=np.zeros(self.nrows)
-
-        #indices=np.arange(self.nrows,dtype='int32')
-        #for i,pix,cos,sin in zip(indices,self.pairs,self.cos,self.sin):
-        #    x[i]+=(v[3*pix]+v[3*pix+1]*cos + v[3*pix+2]*sin)
         Nrows=self.nrows
         pixs=self.pairs
         cos,sin=self.cos,self.sin
-        #print pixs[100]
         code = r"""
 	       int i ;
-           //printf("%d\n",pixs(100));
            for ( i=0;i<Nrows;++i){
+            if (pixs(i) == -1) continue;
             x(i) +=  v(3*pixs(i)) + v(3*pixs(i)+1) *cos(i) + v(3*pixs(i)+2) *sin(i);
             }
         """
@@ -240,7 +241,6 @@ class SparseLO(lp.LinearOperator):
 	               #include <math.h>""",
               libraries=['gomp'],type_converters=weave.converters.blitz)
         return x
-
     def rmult_iqu(self,v):
         """
         Performs the product for the transpose operator :math:`A^T` to get a IQU map-like vector.
@@ -249,17 +249,13 @@ class SparseLO(lp.LinearOperator):
 
         """
         x=np.zeros(self.ncols*self.pol)
-        #zipped_arrs=zip(v,self.pairs,self.cos,self.sin)
-        #for vec_in,pix,cos,sin in zip(v,self.pairs,self.cos,self.sin):
-        #    x[3*pix]    +=    vec_in
-        #    x[1+3*pix]  +=   (vec_in*cos)
-        #    x[2+3*pix]  +=   (vec_in*sin)
         N=self.nrows
         pixs=self.pairs
         cos,sin=self.cos,self.sin
         code = """
 	       int i;
            for ( i=0;i<N;++i){
+            if (pixs(i) == -1) continue;
             x(3*pixs(i))   += v(i);
             x(3*pixs(i)+1) += v(i)*cos(i);
             x(3*pixs(i)+2) += v(i)*sin(i);
@@ -273,24 +269,98 @@ class SparseLO(lp.LinearOperator):
 	               #include <math.h>""",
               libraries=['gomp'],type_converters=weave.converters.blitz)
 
-        for i in self.mask:
-            x[self.pol*i:self.pol*i+self.pol]=0.
         return x
+    def repixelization(self):
+        """
+        Performs pixel reordering by excluding all the unbserved or
+        pathological pixels.
+        """
+        n_new_pix=0
+        n_removed_pix=0
+        self.old2new=np.zeros(self.ncols,dtype=int)
+        if self.pol==1:
+            #print "no repixelization",self.counts
+            for jpix in xrange(self.ncols):
+                if jpix in self.mask:
+                    self.old2new[jpix]=n_new_pix
+                    self.counts[n_new_pix]=self.counts[jpix]
+                    self.obspix[n_new_pix]=self.obspix[jpix]
+                    n_new_pix+=1
+                else:
+                    self.old2new[jpix]=-1
+                    n_removed_pix+=1
+            #resize array
+            self.counts=np.delete(self.counts,xrange(n_new_pix,self.ncols))
+            #print "repixelization",self.counts
 
+        else:
+            #print "no repixelization",self.cos2
+
+            for jpix in xrange(self.ncols):
+                if jpix in self.mask:
+                    self.old2new[jpix]=n_new_pix
+                    self.obspix[n_new_pix]=self.obspix[jpix]
+                    self.cos2[n_new_pix]=self.cos2[jpix]
+                    self.sin2[n_new_pix]=self.sin2[jpix]
+                    self.sincos[n_new_pix]=self.sincos[jpix]
+                    if self.pol==3:
+                        self.counts[n_new_pix]=self.counts[jpix]
+                        self.sine[n_new_pix]=self.sine[jpix]
+                        self.cosine[n_new_pix]=self.cosine[jpix]
+                    n_new_pix+=1
+                else:
+                    self.old2new[jpix]=-1
+                    n_removed_pix+=1
+            #resize
+            self.cos2=np.delete(self.cos2,xrange(n_new_pix,self.ncols))
+            self.sin2=np.delete(self.sin2,xrange(n_new_pix,self.ncols))
+            self.sincos=np.delete(self.sincos,xrange(n_new_pix,self.ncols))
+            if self.pol==3:
+                self.counts=np.delete(self.counts,xrange(n_new_pix,self.ncols))
+                self.sine=np.delete(self.sine,xrange(n_new_pix,self.ncols))
+                self.cosine=np.delete(self.cosine,xrange(n_new_pix,self.ncols))
+            #print "repixelization",self.cos2
+        c=bash_colors()
+        print c.header("___"*30)
+        print c.blue("Found %d pathological pixels\nRepixelizing  w/ %d pixels."%(n_removed_pix,n_new_pix))
+        print c.header("___"*30)
+        #print "map old2new",self.old2new
+        #resizing all the arrays
+        self.obspix=np.delete(self.obspix,xrange(n_new_pix,self.ncols))
+    def flagging_samples(self):
+        """
+        Flags the time samples related to bad pixels to -1.
+        """
+        N=self.nrows
+        pixs=self.pairs
+        o2n=self.old2new
+        code = """
+	       int i,pixel;
+           for ( i=0;i<N;++i){
+            pixel=pixs(i);
+            if (pixel == -1) continue;
+            pixs(i)=o2n(pixel);
+            }
+        """
+        inline(code,['pixs','o2n','N'],verbose=1,
+		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		      support_code = r"""
+	               #include <stdio.h>
+                   #include <omp.h>
+	               #include <math.h>""",
+              libraries=['gomp'],type_converters=weave.converters.blitz)
     def initializeweights(self,phi,w):
         """
-        Pre-compute the quantitities needed in the explicit
-        implementation of :math:`(A^T A)`:
+        Pre-compute the quantitities needed for the implementation of :math:`(A^T A)`
+        and to masks bad pixels.
 
         **Parameters**
 
         - ``counts`` :
             how many times a given pixel is observed in the timestream;
         - ``mask``:
-          mask from  either unobserved pixels (``counts=0``)  or   bad constrained
-          (see the ``pol=3,2`` following cases) ;
-        - ``obspix``:
-            observed pixels
+            mask  either unobserved  (``counts=0``)  or   bad constrained pixels
+            (see the ``pol=3,2`` following cases) ;
         - *If* ``pol=2``:
             the matrix :math:`(A^T A)`  is  symmetric and block-diagonal, each block
             can be written as :
@@ -323,13 +393,12 @@ class SparseLO(lp.LinearOperator):
             the condition number similarly as in the ``pol=2`` case and the pixels
             whose count is :math:`\geq 3`.
 
-
         """
         if self.pol==1:
             self.counts=np.zeros(self.ncols)
             for j,weight in zip(self.pairs,w):
                 self.counts[j]+=weight
-            self.obspix=np.where(self.counts !=0)[0]
+            self.mask=np.where(self.counts >0)[0]
 
         if self.pol==2:
             self.cos=np.cos(2.*phi)
@@ -338,9 +407,9 @@ class SparseLO(lp.LinearOperator):
             self.sin2=np.zeros(self.ncols)
             self.sincos=np.zeros(self.ncols)
             for j,weight,cos,sin in zip(self.pairs,w,self.cos,self.sin):
-                self.cos2[j]+=weight*cos*cos
-                self.sin2[j]+=weight*sin*sin
-                self.sincos[j]+=weight*cos*sin
+                self.cos2[j]    +=  weight*cos*cos
+                self.sin2[j]    +=  weight*sin*sin
+                self.sincos[j]  +=  weight*cos*sin
             det=(self.cos2*self.sin2)-(self.sincos*self.sincos)
             tr=self.cos2+self.sin2
             sqrt=np.sqrt(tr*tr/4. -det)
@@ -348,8 +417,8 @@ class SparseLO(lp.LinearOperator):
             lambda_min=tr/2. - sqrt
             cond_num=np.abs(lambda_max/lambda_min)
             mask=np.where(cond_num<=self.threshold)[0]
-            self.det=det
-            self.obspix=mask
+            #self.det=det
+            self.mask=mask
 
         if self.pol==3:
             self.cos=np.cos(2.*phi)
@@ -361,12 +430,12 @@ class SparseLO(lp.LinearOperator):
             self.sin2=np.zeros(self.ncols)
             self.sincos=np.zeros(self.ncols)
             for pix,weight,cos,sin in zip(self.pairs,w,self.cos,self.sin):
-                self.counts[pix]+=weight
-                self.cosine[pix]+=weight*cos
-                self.sine[pix]+=weight*sin
-                self.cos2[pix]+=weight*cos*cos
-                self.sin2[pix]+=weight*sin*sin
-                self.sincos[pix]+=weight*sin*cos
+                self.counts[pix]    +=  weight
+                self.cosine[pix]    +=  weight*cos
+                self.sine[pix]      +=  weight*sin
+                self.cos2[pix]      +=  weight*cos*cos
+                self.sin2[pix]      +=  weight*sin*sin
+                self.sincos[pix]    +=  weight*sin*cos
 
             det_block=(self.cos2*self.sin2)-(self.sincos*self.sincos)
             Tr_block=self.cos2+self.sin2
@@ -376,38 +445,38 @@ class SparseLO(lp.LinearOperator):
             cond_num=np.abs(lambda_max/lambda_min)
             mask1=np.where(self.counts>2)[0]
             mask=np.where(cond_num<=self.threshold )[0]
-            self.obspix=np.intersect1d(mask1,mask)
+            self.mask=np.intersect1d(mask1,mask)
 
-        self.mask=[]
-        for i in xrange(self.ncols):
-            if i in self.obspix:
-                continue
-            else :
-                self.mask.append(i)
-
-
-    def __init__(self,n,m,obs_pixs,phi=None,pol=1,w=None,threshold_cond=1.e3):
-        if w is None:
-            w=np.ones(m)
-
+    def __init__(self,n,m,pix_samples,phi=None,pol=1,w=None,pixel_schema=None,threshold_cond=1.e3):
         self.ncols=n
+
         self.pol=pol
         self.nrows=m
-        self.pairs=obs_pixs
+        if w is None:
+            w=np.ones(m)
+        if pixel_schema  is None:
+            pixel_schema =np.arange(self.ncols)
+
+
+        self.pairs=pix_samples
+        self.obspix=pixel_schema
         self.threshold=threshold_cond
         self.initializeweights(phi,w)
-
+        self.repixelization()
+        self.flagging_samples()
+        self.ncols=len(self.obspix)
+        n=self.ncols
         if pol==3:
             self.__runcase='IQU'
-            super(SparseLO, self).__init__(nargin=pol*n,nargout=m, matvec=self.mult_iqu,
+            super(SparseLO, self).__init__(nargin=self.pol*self.ncols,nargout=self.nrows, matvec=self.mult_iqu,
                                             symmetric=False, rmatvec=self.rmult_iqu )
         elif pol==1:
             self.__runcase='I'
-            super(SparseLO, self).__init__(nargin=n,nargout=m, matvec=self.mult,
+            super(SparseLO, self).__init__(nargin=self.pol*self.ncols,nargout=self.nrows, matvec=self.mult,
                                                 symmetric=False, rmatvec=self.rmult )
         elif pol==2:
             self.__runcase='QU'
-            super(SparseLO, self).__init__(nargin=pol*n,nargout=m, matvec=self.mult_qu,
+            super(SparseLO, self).__init__(nargin=self.pol*self.ncols,nargout=self.nrows, matvec=self.mult_qu,
                                                 symmetric=False, rmatvec=self.rmult_qu )
         else:
             raise RuntimeError("No valid polarization key set!\t=>\tpol=%d \n \
@@ -578,18 +647,18 @@ class BlockDiagonalLO(lp.LinearOperator):
         self.pol=pol
         super(BlockDiagonalLO, self).__init__(nargin=self.size,nargout=self.size,\
                                                 matvec=self.mult, symmetric=True)
-        self.mask=A.obspix
+        self.pixels=np.arange(n)
         if pol==1 :
             self.counts=A.counts
-        if pol==2 or pol==3:
-
-            self.sin2=A.sin2[A.obspix]
-            self.sincos=A.sincos[A.obspix]
-            self.cos2=A.cos2[A.obspix]
-        if pol==3:
-            self.counts=A.counts[A.obspix]
-            self.cos=A.cosine[A.obspix]
-            self.sin=A.sine[A.obspix]
+        elif pol>1:
+            self.sin2=A.sin2
+            self.sincos=A.sincos
+            self.cos2=A.cos2
+            if pol==3:
+                self.counts=A.counts
+                self.cos=A.cosine
+                self.sin=A.sine
+        print "initialized"
 
     def mult(self,x):
         """
@@ -597,22 +666,21 @@ class BlockDiagonalLO(lp.LinearOperator):
         ( :math:`n_{pix}` array).
         """
         y=x*0.
+        #print len(self.counts),len(x)
         if self.pol==1:
-            y[self.mask]=x[self.mask]*self.counts[self.mask]
+            #y[self.mask]=x[self.mask]*self.counts[self.mask]
+            y=x*self.counts
         elif self.pol==3:
-            for pix,s2,c2,cs,c,s,hits in zip(self.mask,self.sin2,self.cos2,self.sincos,\
+            for pix,s2,c2,cs,c,s,hits in zip(self.pixels,self.sin2,self.cos2,self.sincos,\
                                                 self.cos,self.sin,self.counts):
                 y[3*pix]  = hits*x[3*pix] + c *x[3*pix+1] +  s*x[3*pix+2]
                 y[3*pix+1]=  c * x[3*pix] + c2*x[3*pix+1] + cs*x[3*pix+2]
                 y[3*pix+2]=  s * x[3*pix] + cs*x[3*pix+1] + s2*x[3*pix+2]
         elif self.pol==2:
-            for pix,s2,c2,cs in zip( self.mask,self.sin2,self.cos2,self.sincos):
+            for pix,s2,c2,cs in zip( self.pixels,self.sin2,self.cos2,self.sincos):
                 y[pix*2]  =  c2  *x[2*pix] + cs *x[pix*2+1]
                 y[pix*2+1]=  cs  *x[2*pix] + s2 *x[pix*2+1]
         return y
-
-
-
 
 
 class BlockDiagonalPreconditionerLO(lp.LinearOperator):
@@ -649,20 +717,22 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
         y=x*0.
 
         if self.pol==1:
-            y[self.mask]=x[self.mask]/self.counts[self.mask]
+            #y[self.mask]=x[self.mask]/self.counts[self.mask]
+            y=x/self.counts
         elif self.pol==3:
             determ=self.counts*(self.cos2*self.sin2 - self.sincos*self.sincos)\
                 - self.cos*self.cos*self.sin2 - self.sin*self.sin*self.cos2\
                 +2.*self.cos*self.sin*self.sincos
 
-            for pix,det,s2,c2,cs,c,s,hits in zip(self.mask,determ,self.sin2,self.cos2,self.sincos,\
+            for pix,det,s2,c2,cs,c,s,hits in zip(self.pixels,determ,self.sin2,self.cos2,self.sincos,\
                                 self.cos,self.sin,self.counts):
                 y[3*pix]  =((c2*s2-cs*cs)*x[3*pix]+ (s*cs-c*s2)  *x[3*pix+1]  +( c*cs-s*c2)  *x[3*pix+2])/det
                 y[3*pix+1]=((s*cs-c*s2)  *x[3*pix]+ (hits*s2-s*s)*x[3*pix+1]  +( s*c-hits*cs)*x[3*pix+2])/det
                 y[3*pix+2]=((c*cs -s*c2) *x[3*pix]+(-hits*cs+c*s)*x[3*pix+1]  +(hits*c2-c*c) *x[3*pix+2])/det
 
         elif self.pol==2:
-            for pix,s2,c2,cs,determ in zip( self.mask,self.sin2,self.cos2,self.sincos,self.det):
+            det=(self.cos2*self.sin2)-(self.sincos*self.sincos)
+            for pix,s2,c2,cs,determ in zip( self.pixels,self.sin2,self.cos2,self.sincos,det):
                 y[pix*2]  =  (s2  *x[2*pix] - cs *x[pix*2+1])/determ
                 y[pix*2+1]=  (-cs  *x[2*pix] + c2 *x[pix*2+1])/determ
 
@@ -671,22 +741,22 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
     def __init__(self,A,n,pol=1):
 
         self.size=pol*n
-        self.mask=A.obspix
+        self.pixels=np.arange(n)
         self.pol=pol
         if pol==1 :
             self.counts=A.counts
         elif pol==2:
-            self.det=A.det[A.obspix]
-            self.sin2=A.sin2[A.obspix]
-            self.cos2=A.cos2[A.obspix]
-            self.sincos=A.sincos[A.obspix]
+            #self.det=A.det[A.mask]
+            self.sin2=A.sin2
+            self.cos2=A.cos2
+            self.sincos=A.sincos
         elif pol==3:
-            self.counts=A.counts[A.obspix]
-            self.sin2=A.sin2[A.obspix]
-            self.cos2=A.cos2[A.obspix]
-            self.sincos=A.sincos[A.obspix]
-            self.cos=A.cosine[A.obspix]
-            self.sin=A.sine[A.obspix]
+            self.counts=A.counts
+            self.sin2=A.sin2
+            self.cos2=A.cos2
+            self.sincos=A.sincos
+            self.cos=A.cosine
+            self.sin=A.sine
 
         super(BlockDiagonalPreconditionerLO,self).__init__(nargin=self.size,nargout=self.size,\
                                                             matvec=self.mult, symmetric=True)

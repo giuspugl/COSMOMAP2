@@ -11,18 +11,19 @@ def test_block_diagonal_precond_onto_real_data():
     :math: `M_{BD}=(A^T A)^{-1}`
     with a realistic scanning strategy.
     """
-    #runcase={'IQU':3}
-    runcase={'I':1,'QU':2,'IQU':3}
+    runcase={'IQU':3}
+    #runcase={'I':1,'QU':2,'IQU':3}
     for pol in runcase.values():
-        d,t,phi,pixs,hp_pixs,ground,ces_size=read_from_data('data/20120718_093931.hdf5',pol=pol,npairs=4)
+        d,t,phi,pixs,hp_pixs,ground,ces_size=read_from_data('data/20120718_093931.hdf5',pol=1,npairs=4)
         nt,npix,nb=len(d),len(hp_pixs),len(t)
         print nt,npix,nb,len(hp_pixs[pixs])
         nside=128
         pr=profile_run()
 
         P=SparseLO(npix,nt,pixs,phi,pol=pol)
-        #A=P.T*P
-        #x0=np.zeros(npix*pol)
+        npix=P.ncols
+        A=P.T*P
+        x0=np.zeros(npix*pol)
         Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
         if pol==1:
             fname='data/map_BD_i_cmb_'+str(nside)+'.fits'
@@ -33,15 +34,9 @@ def test_block_diagonal_precond_onto_real_data():
         elif pol==3:
             fname='data/map_BD_iqu_cmb_'+str(nside)+'.fits'
             inm=hp.read_map('data/cmb_r0.2_3.5arcmin_128.fits',field=[0,1,2])
-        print len(Mbd.mask),Mbd.mask,npix
         b=P.T*d
         x=Mbd*b
-        show_matrix_form(Mbd*P.T*P)
-        print x[Mbd.mask]
-        """
-
-
-
+        #show_matrix_form(Mbd*P.T*P)
         globals()['c']=0
         def count_iterations(x):
             globals()['c']+=1
@@ -50,18 +45,18 @@ def test_block_diagonal_precond_onto_real_data():
         #x=Mbd*b
         x,info=spla.cg(A,b,x0=x0,M=Mbd,tol=1.e-3,maxiter=10,callback=count_iterations)
         pr.disable()
-        output_profile(pr)
+        #output_profile(pr)
         #checking_output(info)
         print "After  %d iteration. "%(globals()['c'])
         #assert checking_output(info) and globals()['c']==1
 
 
-        hp_map=reorganize_map(x,hp_pixs,npix,nside,pol,fname,write=False)
-        mask=obspix2mask(hp_pixs,pixs,nside,'data/mask_ra23.fits',write=False)
+        hp_map=reorganize_map(x,hp_pixs,npix,nside,pol)
+        mask=obspix2mask(hp_pixs,pixs,nside)
 
 
-        #compare_maps(hp_map,inm,pol,'ra23',mask)
-        """
+        compare_maps(hp_map,inm,pol,'ra23',mask)
+
 
 
 def test_block_diagonal_precond_plus_noise_onto_real_data():
