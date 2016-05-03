@@ -17,7 +17,7 @@ def read_from_data(filename,pol,npairs=None):
       - ``2``: read data for polarization data;
       - ``3``: read  for both intensity and  polarization data;
 
-    -``npairs``:{int}
+    - ``npairs``:{int}
         set how many bolo_pairs to read, default is ``None``.
 
     """
@@ -73,9 +73,9 @@ def read_multiple_ces(filelist,pol, npairs=None,filtersubscan=True):
       - ``2``: read data for polarization data;
       - ``3``: read  for both intensity  and polarization data;
 
-    -``npairs``:{int}
+    - ``npairs``:{int}
         set how many bolo_pairs to read, default is ``None``.
-    -``filtersubscan``:{bool}
+    - ``filtersubscan``:{bool}
         activate the subscan selection on to data (default ``True``).
 
     """
@@ -120,7 +120,7 @@ def read_from_data_with_subscan_resize(filename,pol,npairs=None):
       - ``1``: read data for temperature only data;
       - ``2,3``: read  for polarization data;
 
-    -``npairs``:{int}
+    - ``npairs``:{int}
         set how many bolo_pairs to read, default is ``None``.
 
     """
@@ -201,7 +201,7 @@ def read_ritz_eigenvectors_from_hdf5(filename):
 def write_to_hdf5(filename,obs_pixels,noise_values,d,phi=None):
     """
     Write onto hdf5 file whose datasets are created by the routine
-    ``utilities_functions.system_setup``
+    :func:`utilities_functions.system_setup`.
 
     """
 
@@ -240,8 +240,7 @@ def show_matrix_form(A):
 
 def read_from_hdf5(filename):
     """
-    Read from a hdf5 file whose datasets are created by the routine
-    ``utilities_functions.system_setup``
+    Read from a hdf5 file whose datasets are created by the routine :func:`utilities_functions.system_setup`
     """
     f=h5.File(filename,"r")
 

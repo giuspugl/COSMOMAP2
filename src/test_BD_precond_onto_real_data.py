@@ -52,8 +52,10 @@ def test_block_diagonal_precond_onto_real_data():
         hp_pixs=P.obspix
 
         hp_map=reorganize_map(x,hp_pixs,npix,nside,pol)
-        mask=obspix2mask(hp_pixs,pixs,nside)
+        #mask=obspix2mask(hp_pixs,pixs,nside)
+        mask=obspix2mask(hp_pixs,nside)
 
+        #show_map(mask,1,'ra23')
 
         compare_maps(hp_map,inm,pol,'ra23',mask,remove_offset=False,norm=None)
 

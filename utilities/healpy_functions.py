@@ -7,21 +7,20 @@ if 'DISPLAY' not in os.environ:
 
 import matplotlib.pyplot as plt
 
-def  obspix2mask(obspix,pixs,nside,fname=None):
+def  obspix2mask(obspix,nside,fname=None):
+
     """
     From the observed pixels to a binary mask, (``mask[obspix]=1 , 0 elsewhere``)
 
     **Parameters**
 
     - ``osbpix``:{array}
-        pixels observed during the scanning of the telescope.
-        Already ordered in the  HEALPIX pixelization.
+        pixels observed during the scanning of the telescope and considered
+        as not pathological (ordering in the  HEALPIX pixelization).
     - ``nside``: {int}
         Healpix parameter to define the pixelization grid of the map
     - ``fname``:{str}
-        path to the fits file to store/read the map
-    - ``write``:{bool}
-        if ``True`` it writes onto the file, it reads from it otherwise
+        path to the fits file to write the map, if set it writes onto the file
 
     **Returns**
 
@@ -30,7 +29,7 @@ def  obspix2mask(obspix,pixs,nside,fname=None):
 
     """
     mask=np.zeros(hp.nside2npix(nside))
-    mask[obspix[pixs]]=1.
+    mask[obspix]=1
     if not fname is None :
         hp.write_map(fname,mask)
 
@@ -39,7 +38,7 @@ def  obspix2mask(obspix,pixs,nside,fname=None):
 def reorganize_map(mapin,obspix,npix,nside,pol,fname=None):
     """
     From the solution map of the preconditioner to a Healpix map.
-    It specially split the input array ``mapin`` which is a IQU
+    It specially splits the input array ``mapin`` which is a IQU
     for a polarization analysis in to 3 arrays ``i,q,u``.
 
     **Parameters**
@@ -53,7 +52,6 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname=None):
         the same as in ``obspix2mask``;
     - ``pol``:{int}
     - ``fname``:{str}
-    - ``write``:{bool}
 
     **Returns**
 
@@ -95,6 +93,23 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname=None):
     return hp_list
 
 def show_map(outm,pol,patch,figname=None,norm='hist'):
+    """
+    Output the map `outm` to screen or to a file.
+
+    **Parameters**
+
+    - ``outm`` :
+        map in the `.fits` format;
+    - ``pol`` : {int}
+    -  ``patch``: {str}
+        Key to a dictionary to get the equatorial coordinates given a name patch (Polarbear collaboration
+        is now observing in 3 patches: `ra23`, `ra12`, `lst4p5`);
+    - ``figname`` : {str}
+        If unset, outputs on screen;
+    - ``norm`` : {str}
+        key to the normalization of the color scale, ( `None`, `hist`, `log`)
+
+    """
     coord_dict={'ra23':[-13.45,-32.09]}
     coords=coord_dict[patch]
     if pol==1:
@@ -144,8 +159,28 @@ def subtract_offset(mapp,obspix, pol):
 
 def compare_maps(outm,inm,pol,patch,mask,figname=None,remove_offset=True,norm='hist'):
     """
-    Print on device the input map,  the one processed from datastream
+    Output on device or in file the input map,  the output one processed from datastream
     and their difference.
+
+    **Parameters**
+
+    - ``outm`` :{array,list}
+        map in the `.fits` format;
+    - ``inm``:{array,list}
+        input `.fits` map to be compared  with `outm`;
+    - ``pol`` : {int}
+        see :func:`show_map`;
+    -  ``patch``: {str}
+        Key to a dictionary to get the equatorial coordinates given a name patch, see :func:`show_map`;
+    -  ``mask``:{array}
+        binary map (0=unobserved, 1=observed pixels);
+    - ``figname`` : {str}
+        If unset, outputs on screen;
+    - ``remove_offset``:{bool}
+        If True removes the monopole from the input map,`inm`, in the observed region;
+    - ``norm`` : {str}
+        key to the normalization of the color scale, ( `None`, `hist`, `log`)
+
     """
     unseen=np.where(mask ==0)[0]
     observ=np.where(mask !=0)[0]

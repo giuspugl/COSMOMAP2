@@ -21,6 +21,15 @@ class FilterLO(lp.LinearOperator):
     - ``subscan_nsample``: {array}
         contains the size of each chunk of the samples which has to be processed.
         :math:`\sum_i subscan_{i} = size`.
+    - ``pix_samples``: {array}
+        the same argument as in :class:`SparseLO`, encoding all the pixels observed
+        during observations.
+
+    .. note::
+
+        To be consistent with tha analysis :class:`FilterLO` does not take into account
+        all the flagged pixels.
+
 
     """
     def mult(self,d):
@@ -64,10 +73,10 @@ class FilterLO(lp.LinearOperator):
 
         return vec_out
 
-    def __init__(self,size,subscan_nsample, flagged_pixs):
+    def __init__(self,size,subscan_nsample, pix_samples):
         self.n=size
         self.chunks=subscan_nsample
-        self.pixels=flagged_pixs
+        self.pixels=pix_samples
         super(FilterLO, self).__init__(nargin=size,nargout=size, matvec=self.mult,
                                                 symmetric=False )
 
@@ -84,11 +93,9 @@ class SparseLO(lp.LinearOperator):
     .. note::
 
         During its initialization,  a private member function :func:`initializeweights`
-         is called to precompute arrays needed for the explicit implementation of
-        :class:`interfaces.BlockDiagonalPreconditionerLO`.
-        Moreover it masks all the unobserved or pathological pixels which won't
-        be taken into account, via the functions   :func:`repixelization`  and
-        :func:`flagging_samples`.
+        is called to precompute arrays needed for the explicit implementation of :class:`BlockDiagonalPreconditionerLO`.
+        Moreover it masks all the unobserved or pathological pixels which won't be taken into account, via the functions
+        :func:`repixelization`  and   :func:`flagging_samples`.
 
     **Parameters**
 
@@ -102,19 +109,21 @@ class SparseLO(lp.LinearOperator):
     - ``pol`` : {int,[*default* `pol=1`]}
         process an intensity only (``pol=1``), polarization only ``pol=2``
         and intensity+polarization map (``pol=3``);
-    - `phi`: {array, [*default* `None`]}
-        array with polarization angles (needed if ``pol=3,2``).
+    - ``phi``: {array, [*default* `None`]}
+        array with polarization angles (needed if ``pol=3,2``);
     - ``w``: {array, [*default* `None`]}
         array with noise weights , :math:`w_t= N^{-1} _{tt}`, computed by
         :func:`BlockLO.build_blocks`.   If it is  not set :func:`SparseLO.initializeweights`
-        assumes it to be a :func:`numpy.ones` array.
+        assumes it to be a :func:`numpy.ones` array;
     - ``pixel_schema``:{array}
         Map from the internal pixelization to an external one, i.e. HEALPIX, it has to be modified when
-        pathological pixels are not taken into account.
+        pathological pixels are not taken into account;
         Default is :func:`numpy.arange(npix)`, i.e. identity map;
     - ``threshold_cond``: {float}
         set the condition number threshold to mask bad conditioned pixels (it's used in polarization cases).
         Default is set to 1.e3.
+
+
     """
 
     def mult(self,v):
@@ -394,7 +403,7 @@ class SparseLO(lp.LinearOperator):
             The eigenvalues are needed to define the mask of bad constrained pixels whose
             condition number is :math:`\gg 1`.
 
-        - [*If*  ``pol=3``]:
+        - *If*  ``pol=3``:
             each block of the matrix :math:`(A^T A)`  is a ``3 x 3`` matrix:
 
             .. csv-table::
@@ -875,10 +884,12 @@ class CoarseLO(lp.LinearOperator):
     - ``A`` : {SparseLO}
             to  compute vectors :math:`AZ_i`;
     - ``r`` :  {int}
-            :math:`rank(Z)`, dimension of the deflation subspace.
-    -``apply``:{str}
-            -``LU``: performs LU decomposition,
-            -``eig``: compute the eigenvalues and eigenvectors of ``E``.
+            :math:`rank(Z)`, dimension of the deflation subspace;
+    - ``apply``:{str}
+            - ``LU``: performs LU decomposition,
+            - ``eig``: compute the eigenvalues and eigenvectors of ``E``.
+
+
     """
 
     def mult(self,v):
