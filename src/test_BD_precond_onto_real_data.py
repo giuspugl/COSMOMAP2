@@ -12,15 +12,15 @@ def test_block_diagonal_precond_onto_real_data():
     with a realistic scanning strategy.
     """
     runcase={'IQU':3}
-    #runcase={'I':1,'QU':2,'IQU':3}
+    runcase={'I':1,'QU':2,'IQU':3}
     for pol in runcase.values():
-        d,t,phi,pixs,hp_pixs,ground,ces_size=read_from_data('data/20120718_093931.hdf5',pol=1,npairs=4)
+        d,t,phi,pixs,hp_pixs,ground,ces_size=read_from_data('data/20120718_093931.hdf5',pol=pol,npairs=4)
         nt,npix,nb=len(d),len(hp_pixs),len(t)
         print nt,npix,nb,len(hp_pixs[pixs])
         nside=128
         pr=profile_run()
 
-        P=SparseLO(npix,nt,pixs,phi,pol=pol)
+        P=SparseLO(npix,nt,pixs,phi,pixel_schema=hp_pixs,pol=pol)
         npix=P.ncols
         A=P.T*P
         x0=np.zeros(npix*pol)
@@ -49,13 +49,13 @@ def test_block_diagonal_precond_onto_real_data():
         #checking_output(info)
         print "After  %d iteration. "%(globals()['c'])
         #assert checking_output(info) and globals()['c']==1
-
+        hp_pixs=P.obspix
 
         hp_map=reorganize_map(x,hp_pixs,npix,nside,pol)
         mask=obspix2mask(hp_pixs,pixs,nside)
 
 
-        compare_maps(hp_map,inm,pol,'ra23',mask)
+        compare_maps(hp_map,inm,pol,'ra23',mask,remove_offset=False,norm=None)
 
 
 

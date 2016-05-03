@@ -11,7 +11,8 @@ def test_coarse_operator():
     blocksize=nt/nb
     d,pairs,phi,t,diag=system_setup(nt,npix,nb)
     c=bash_colors()
-    for pol in [1,2,3]:
+    runcase={'I':1,'QU':2,'IQU':3}
+    for pol in runcase.values():
 
         P=SparseLO(npix,nt,pairs,phi,pol)
         npix=P.ncols

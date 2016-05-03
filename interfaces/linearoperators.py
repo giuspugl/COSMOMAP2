@@ -31,29 +31,43 @@ class FilterLO(lp.LinearOperator):
                 start=offset
                 end=start + i
                 offset+=i
-                
+                pixs=self.pixels
                 code = r"""
         	    int j;
-                for (j=start;j<end;++j){
-                    if (pixs(j) == -1) continue;
-                    x(i)+= v(pixs(i));
+                double mean=0.;
+                double counter=0.;
+                int tstart=start;
+                int tend=end;
+                for (j=tstart;j < tend;++j){
+                    if (pixs(j) == -1){
+                        //printf("Skip \n");
+                        continue;
                     }
+                    mean+= d(j);
+                    counter+=1.;
+                    }
+                mean=mean/ counter;
+                //printf("%g\t %g\n",mean,counter);
+                return_val=mean;
                 """
-                res = inline(code,['pixs','v','x','Nrows'],verbose=1,
-        		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+                dmean = inline(code,['pixs','d','start','end'],verbose=1,
+        		      extra_compile_args=['-march=native ' ],
         		            support_code = r"""
         	                   #include <stdio.h>
-                               #include <omp.h>
         	                   #include <math.h>""",
-                               libraries=['gomp'],type_converters=weave.converters.blitz)
+                               type_converters=weave.converters.blitz)
+                if np.isinf(dmean) or np.isnan(dmean):
+                    continue
 
-                vec_out[start:end ]=d[start:end] - np.mean(d[start:end])
+                #vec_out[start:end ]=d[start:end] - np.mean(d[start:end])
+                vec_out[start:end ]=d[start:end] - dmean
 
         return vec_out
 
-    def __init__(self,size,subscan_nsample):
+    def __init__(self,size,subscan_nsample, flagged_pixs):
         self.n=size
         self.chunks=subscan_nsample
+        self.pixels=flagged_pixs
         super(FilterLO, self).__init__(nargin=size,nargout=size, matvec=self.mult,
                                                 symmetric=False )
 

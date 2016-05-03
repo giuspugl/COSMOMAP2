@@ -13,8 +13,8 @@ def test_deflation_operator():
     nt,npix,nb=400,20,2
     blocksize=nt/nb
     d,pairs,phi,t,diag=system_setup(nt,npix,nb)
-
-    for pol in [1,2,3]:
+    runcase={'I':1,'QU':2,'IQU':3}
+    for pol in runcase.values():
         N=BlockLO(blocksize,t,offdiag=True)
         P=SparseLO(npix,nt,pairs,phi,pol=pol )
         npix=P.ncols
