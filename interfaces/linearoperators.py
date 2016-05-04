@@ -18,9 +18,16 @@ class FilterLO(lp.LinearOperator):
 
     - ``size``: {int}
         the size of the input array;
-    - ``subscan_nsample``: {array}
-        contains the size of each chunk of the samples which has to be processed.
-        :math:`\sum_i subscan_{i} = size`.
+    - ``subscan_nsample``: {list of 2 array}
+        - ``subscan_nsample[0]``, contains the size of each chunk of the samples
+            which has to be processed;
+         - ``subscan_nsample[1]``, contains the starting sample index  of  each chunk;
+
+    - ``samples_per_bolopair``:{list of int }
+        Number of samples observed during one Constant Elevation Scan (CES) for
+        any pair of detectors. If more CES are included it is a ``list of int``;
+    - ``bolos_per_ces``:{list of int}
+        Number of pairs of detectors that observed during a CES.
     - ``pix_samples``: {array}
         the same argument as in :class:`SparseLO`, encoding all the pixels observed
         during observations.
@@ -36,11 +43,6 @@ class FilterLO(lp.LinearOperator):
         vec_out=d*0.
         pixs=self.pixels
         offset=0
-        if not (type(self.nsamples) is list):
-            self.nsamples=[self.nsamples]
-            self.nbolos=[self.nbolos]
-            self.chunks=[self.chunks]
-            self.tstart=[self.tstart]
 
         for ch,ts,ns,nb in zip(self.chunks,self.tstart,self.nsamples,self.nbolos):
             n=nb*ns
@@ -85,6 +87,11 @@ class FilterLO(lp.LinearOperator):
         self.nbolos=bolos_per_ces
         self.chunks=subscan_nsample[0]
         self.tstart=subscan_nsample[1]
+        if not (type(self.nsamples) is list):
+            self.nsamples=[self.nsamples]
+            self.nbolos=[self.nbolos]
+            self.chunks=[self.chunks]
+            self.tstart=[self.tstart]
         self.pixels=pix_samples
         super(FilterLO, self).__init__(nargin=size,nargout=size, matvec=self.mult,
                                                 symmetric=False )
@@ -131,7 +138,6 @@ class SparseLO(lp.LinearOperator):
     - ``threshold_cond``: {float}
         set the condition number threshold to mask bad conditioned pixels (it's used in polarization cases).
         Default is set to 1.e3.
-
 
     """
 
@@ -311,7 +317,6 @@ class SparseLO(lp.LinearOperator):
         n_removed_pix=0
         self.old2new=np.zeros(self.ncols,dtype=int)
         if self.pol==1:
-            #print "no repixelization",self.counts
             for jpix in xrange(self.ncols):
                 if jpix in self.mask:
                     self.old2new[jpix]=n_new_pix
@@ -323,11 +328,7 @@ class SparseLO(lp.LinearOperator):
                     n_removed_pix+=1
             #resize array
             self.counts=np.delete(self.counts,xrange(n_new_pix,self.ncols))
-            #print "repixelization",self.counts
-
         else:
-            #print "no repixelization",self.cos2
-
             for jpix in xrange(self.ncols):
                 if jpix in self.mask:
                     self.old2new[jpix]=n_new_pix
@@ -351,12 +352,10 @@ class SparseLO(lp.LinearOperator):
                 self.counts=np.delete(self.counts,xrange(n_new_pix,self.ncols))
                 self.sine=np.delete(self.sine,xrange(n_new_pix,self.ncols))
                 self.cosine=np.delete(self.cosine,xrange(n_new_pix,self.ncols))
-            #print "repixelization",self.cos2
         c=bash_colors()
         print c.header("___"*30)
         print c.blue("Found %d pathological pixels\nRepixelizing  w/ %d pixels."%(n_removed_pix,n_new_pix))
         print c.header("___"*30)
-        #print "map old2new",self.old2new
         #resizing all the arrays
         self.obspix=np.delete(self.obspix,xrange(n_new_pix,self.ncols))
     def flagging_samples(self):
@@ -488,8 +487,6 @@ class SparseLO(lp.LinearOperator):
             w=np.ones(m)
         if pixel_schema  is None:
             pixel_schema =np.arange(self.ncols)
-
-
         self.pairs=pix_samples
         self.obspix=pixel_schema
         self.threshold=threshold_cond
@@ -698,9 +695,7 @@ class BlockDiagonalLO(lp.LinearOperator):
         ( :math:`n_{pix}` array).
         """
         y=x*0.
-        #print len(self.counts),len(x)
         if self.pol==1:
-            #y[self.mask]=x[self.mask]*self.counts[self.mask]
             y=x*self.counts
         elif self.pol==3:
             for pix,s2,c2,cs,c,s,hits in zip(self.pixels,self.sin2,self.cos2,self.sincos,\
@@ -749,7 +744,6 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
         y=x*0.
 
         if self.pol==1:
-            #y[self.mask]=x[self.mask]/self.counts[self.mask]
             y=x/self.counts
         elif self.pol==3:
             determ=self.counts*(self.cos2*self.sin2 - self.sincos*self.sincos)\
@@ -771,7 +765,6 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
         return y
 
     def __init__(self,A,n,pol=1):
-
         self.size=pol*n
         self.pixels=np.arange(n)
         self.pol=pol
@@ -929,7 +922,6 @@ class CoarseLO(lp.LinearOperator):
         eigenvals,W=eigh(E)
         lambda_max=max(eigenvals)
         diags=eigenvals*0.
-        #print abs(eigenvals/lambda_max)
         threshold_to_degen=1.e-5
         nondegenerate=np.where(abs(eigenvals/lambda_max)>threshold_to_degen)[0]
         degenerate=np.where(abs(eigenvals/lambda_max)<threshold_to_degen)[0]
