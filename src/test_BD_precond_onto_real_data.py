@@ -22,6 +22,7 @@ def test_block_diagonal_precond_onto_real_data():
 
         P=SparseLO(npix,nt,pixs,phi,pixel_schema=hp_pixs,pol=pol)
         npix=P.ncols
+
         A=P.T*P
         x0=np.zeros(npix*pol)
         Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)

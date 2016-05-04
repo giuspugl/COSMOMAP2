@@ -34,48 +34,57 @@ class FilterLO(lp.LinearOperator):
     """
     def mult(self,d):
         vec_out=d*0.
+        pixs=self.pixels
         offset=0
-        while offset<self.n:
-            for i in self.chunks:
-                start=offset
-                end=start + i
-                offset+=i
-                pixs=self.pixels
-                code = r"""
-        	    int j;
-                double mean=0.;
-                double counter=0.;
-                int tstart=start;
-                int tend=end;
-                for (j=tstart;j < tend;++j){
-                    if (pixs(j) == -1){
-                        //printf("Skip \n");
-                        continue;
-                    }
-                    mean+= d(j);
-                    counter+=1.;
-                    }
-                mean=mean/ counter;
-                //printf("%g\t %g\n",mean,counter);
-                return_val=mean;
-                """
-                dmean = inline(code,['pixs','d','start','end'],verbose=1,
-        		      extra_compile_args=['-march=native ' ],
-        		            support_code = r"""
-        	                   #include <stdio.h>
-        	                   #include <math.h>""",
-                               type_converters=weave.converters.blitz)
-                if np.isinf(dmean) or np.isnan(dmean):
-                    continue
+        if not (type(self.nsamples) is list):
+            self.nsamples=[self.nsamples]
+            self.nbolos=[self.nbolos]
+            self.chunks=[self.chunks]
+            self.tstart=[self.tstart]
 
-                #vec_out[start:end ]=d[start:end] - np.mean(d[start:end])
-                vec_out[start:end ]=d[start:end] - dmean
-
+        for ch,ts,ns,nb in zip(self.chunks,self.tstart,self.nsamples,self.nbolos):
+            n=nb*ns
+            bolo_iter=0
+            while ( bolo_iter<nb):
+                #print bolo_iter,"\t CES stride", offset
+                for i,j in zip(ch,ts):
+                    start=j+(ns*bolo_iter) + offset
+                    end=start + i
+                    code = r"""
+                	    int j;
+                        double mean=0.;
+                        double counter=0.;
+                        int tstart=start;
+                        int tend=end;
+                        for (j=tstart;j < tend;++j){
+                            if (pixs(j) == -1){
+                                continue;
+                            }
+                            mean+= d(j);
+                            counter+=1.;
+                        }
+                        mean=mean/ counter;
+                        return_val=mean;
+                        """
+                    dmean = inline(code,['pixs','d','start','end'],verbose=1,
+                          extra_compile_args=['-march=native ' ],
+                          support_code = r"""
+                    	               #include <stdio.h>
+                    	               #include <math.h>""",
+                          type_converters=weave.converters.blitz)
+                    if np.isinf(dmean) or np.isnan(dmean):
+                        continue
+                    vec_out[start:end ]=d[start:end] - dmean
+                bolo_iter+=1
+            offset+=n
         return vec_out
 
-    def __init__(self,size,subscan_nsample, pix_samples):
+    def __init__(self,size,subscan_nsample,samples_per_bolopair,bolos_per_ces, pix_samples):
         self.n=size
-        self.chunks=subscan_nsample
+        self.nsamples=samples_per_bolopair
+        self.nbolos=bolos_per_ces
+        self.chunks=subscan_nsample[0]
+        self.tstart=subscan_nsample[1]
         self.pixels=pix_samples
         super(FilterLO, self).__init__(nargin=size,nargout=size, matvec=self.mult,
                                                 symmetric=False )

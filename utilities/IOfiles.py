@@ -79,13 +79,13 @@ def read_multiple_ces(filelist,pol, npairs=None,filtersubscan=True):
         activate the subscan selection on to data (default ``True``).
 
     """
-
-
     if filtersubscan:
         readf = read_from_data_with_subscan_resize
-        subscan=[]
-    else:  readf = read_from_data
-    pixs,polang,d,weight,ground,hp_pixs,n_samples=[],[],[],[],[],[],[]
+        subscan,tstart=[],[]
+    else:
+        readf = read_from_data
+    bolopairs_per_ces,samples_per_bolopair=[],[]
+    pixs,polang,d,weight,ground,hp_pixs=[],[],[],[],[],[]
     for f in filelist:
         outdata=readf(f,pol,npairs=npairs)
         d.append(outdata[0])
@@ -93,18 +93,28 @@ def read_multiple_ces(filelist,pol, npairs=None,filtersubscan=True):
         polang.append(outdata[2])
         pixs.append(outdata[3])
         ground.append(outdata[5])
-        n_samples.append(len(outdata[0]))
         if filtersubscan:
-            subscan.append(outdata[7])
+            samples_per_bolopair.append(outdata[6])
+            bolopairs_per_ces.append(outdata[7])
+            subscan.append(outdata[8][0])
+            tstart.append(outdata[8][1])
     hp_pixs.append(outdata[4])
     if filtersubscan:
         return np.concatenate(d),np.concatenate(weight),np.concatenate(polang),\
-          np.concatenate(pixs),np.concatenate(hp_pixs),np.concatenate(ground),\
-                n_samples,np.concatenate(subscan)
+            np.concatenate(pixs),np.concatenate(hp_pixs),np.concatenate(ground),\
+                    subscan,tstart,samples_per_bolopair,bolopairs_per_ces
     else:
         return np.concatenate(d),np.concatenate(weight),np.concatenate(polang),\
-            np.concatenate(pixs), np.concatenate(hp_pixs),np.concatenate(ground),n_samples
+            np.concatenate(pixs), np.concatenate(hp_pixs),np.concatenate(ground)
 
+def flagging_subscan(unflag_pix,subscan):
+    nsamples=subscan[0]
+    tstart=subscan[1]
+    k=0
+    for t,n in zip(tstart,nsamples):
+        unflag_pix[k:t]=-1
+        k=t+n
+    #return unflag_pix
 
 def read_from_data_with_subscan_resize(filename,pol,npairs=None):
     """
@@ -130,7 +140,7 @@ def read_from_data_with_subscan_resize(filename,pol,npairs=None):
     n_bolo_pair=f['n_bolo_pair'][...]
     n_ces=f['n_sample_ces'][...]
     subscan=[f['subscans/n_sample'][...],f['subscans/t_start'][...]]
-    print "Bolo Pairs: %d \t CES: %d "%(n_bolo_pair,n_ces)
+    print "Bolo Pairs in this CES : %d \t #samples per Bolo Pairs: %d "%(n_bolo_pair,n_ces)
     pixs_pair=[]
     polang_pair=[]
     d_pair=[]
@@ -143,15 +153,18 @@ def read_from_data_with_subscan_resize(filename,pol,npairs=None):
         print "reading %d bolopairs"%n_to_read
     for i in range(n_to_read):
         group=f['bolo_pair_'+str(i)]
-        pixs_pair.append(subscan_resize(group['pixel'][...],subscan))
-        polang_pair.append(subscan_resize(group['pol_angle'][...],subscan))
-        ground_pair.append(subscan_resize(group['ground'][...],subscan))
+        pix =group['pixel'][...]
+        flagging_subscan(pix,subscan)
+        pixs_pair.append(pix)
+        polang_pair.append(group['pol_angle'][...])
+        ground_pair.append(group['ground'][...])
         if pol== 1:
-            d_pair.append(subscan_resize(group['sum'][...],subscan))
+            d_pair.append(group['sum'][...])
             weight_pair.append(group['weight_sum'][...])
         elif pol==3 or pol==2:
-            d_pair.append(subscan_resize(group['dif'][...],subscan))
+            d_pair.append(group['dif'][...])
             weight_pair.append(group['weight_dif'][...])
+
     f.close()
 
     d=np.concatenate(d_pair)
@@ -159,8 +172,8 @@ def read_from_data_with_subscan_resize(filename,pol,npairs=None):
     polang=np.concatenate(polang_pair)
     pixs=np.concatenate(pixs_pair)
     ground=np.concatenate(ground_pair)
+    return d,weight,polang,pixs,hp_pixs,ground,n_ces,n_to_read,subscan
 
-    return d,weight,polang,pixs,hp_pixs,ground,n_ces,subscan[0]
 
 
 def write_ritz_eigenvectors_to_hdf5(z,filename):

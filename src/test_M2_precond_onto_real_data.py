@@ -14,18 +14,24 @@ def test_M2_precond_onto_real_data():
     """
     nside=128
     pol=3
-    d,t,phi,pixs,hp_pixs,ground,ces_size,subscan_nsample=\
-                read_from_data_with_subscan_resize('data/20120718_093931.hdf5',pol=pol)
+    filelist=['data/20120718_093931.hdf5','data/20131011_092136.hdf5']
+    #filelist=['data/20120718_093931.hdf5']
+    d,t,phi,pixs,hp_pixs,ground,subscan_nsample,tstart,samples_per_bolopair,bolos_per_ces=\
+                read_multiple_ces(filelist,pol, npairs=5,filtersubscan=True)
+                #read_from_data_with_subscan_resize('data/20120718_093931.hdf5',pol=pol)
     nt,npix,nb=len(d),len(hp_pixs),len(t)
     print nt,npix,nb,len(hp_pixs[pixs])
-
     N=BlockLO(nt/nb,t,offdiag=False)
 
+    P=SparseLO(npix,nt,pixs,phi,pixel_schema=hp_pixs,pol=pol,w=N.diag)
     pr=profile_run()
 
-    F=FilterLO(nt,subscan_nsample)
+    npix=P.ncols
+    hp_pixs=P.obspix
+    F=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs)
+    b=P.T*F*d
+    """
 
-    P=SparseLO(npix,nt,pixs,phi,pol=pol,w=N.diag)
     A=P.T*F*P
 
     if pol==1:
@@ -45,7 +51,6 @@ def test_M2_precond_onto_real_data():
     w=[]
     tol=1.e-7
     B=Mbd*A
-    b=P.T*F*d
     tstart=time.clock()
     w,h=arnoldi(B,Mbd*b,x0=x0,tol=tol,maxiter=1,inner_m=pol*npix)
     tend=time.clock()
@@ -106,7 +111,7 @@ def test_M2_precond_onto_real_data():
     mask=obspix2mask(hp_pixs,pixs,nside,'data/mask_ra23.fits',write=False)
 
     compare_maps(hp_map,inm,pol,'ra23',mask)
-
+    """
 def test_M2_w_arpack():
     """
     Test the action of the 2-level  preconditioner
@@ -193,6 +198,6 @@ def count_iterations(x):
 
 
 
-#test_M2_precond_onto_real_data()
+test_M2_precond_onto_real_data()
 
-test_M2_w_arpack()
+#test_M2_w_arpack()
