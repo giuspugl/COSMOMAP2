@@ -13,11 +13,11 @@ def test_M2_precond_onto_real_data():
     with a realistic scanning strategy.
     """
     nside=128
-    pol=3
-    filelist=['data/20120718_093931.hdf5','data/20131011_092136.hdf5']
-    #filelist=['data/20120718_093931.hdf5']
+    pol=2
+    #filelist=['data/20120718_093931.hdf5','data/20131011_092136.hdf5']
+    filelist=['data/20120718_093931.hdf5']
     d,t,phi,pixs,hp_pixs,ground,subscan_nsample,tstart,samples_per_bolopair,bolos_per_ces=\
-                read_multiple_ces(filelist,pol, npairs=5,filtersubscan=True)
+                read_multiple_ces(filelist,pol, npairs=1,filtersubscan=True)
                 #read_from_data_with_subscan_resize('data/20120718_093931.hdf5',pol=pol)
     nt,npix,nb=len(d),len(hp_pixs),len(t)
     print nt,npix,nb,len(hp_pixs[pixs])
@@ -30,17 +30,17 @@ def test_M2_precond_onto_real_data():
     hp_pixs=P.obspix
     F=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs)
     b=P.T*F*d
-    """
 
     A=P.T*F*P
-
+    Mbd=BlockDiagonalPreconditionerLO(P,npix,pol)
+    B=BlockDiagonalLO(P,npix,pol)
+    show_matrix_form(Mbd*B)
+    show_matrix_form(B)
     if pol==1:
-        Mbd=BlockDiagonalPreconditionerLO(P.counts,P.mask,npix,pol)
         fname='data/map_BD_i_cmb_'+str(nside)+'.fits'
         inm=hp.read_map('data/cmb_r0.2_3.5arcmin_128.fits')
 
     elif pol==3:
-        Mbd=BlockDiagonalPreconditionerLO(P.counts,P.mask,npix,pol,P.sin2,P.cos2,P.sincos)
         fname='data/map_BD_iqu_cmb_'+str(nside)+'.fits'
         inm=hp.read_map('data/cmb_r0.2_3.5arcmin_128.fits',field=[0,1,2])
 
@@ -111,7 +111,8 @@ def test_M2_precond_onto_real_data():
     mask=obspix2mask(hp_pixs,pixs,nside,'data/mask_ra23.fits',write=False)
 
     compare_maps(hp_map,inm,pol,'ra23',mask)
-    """
+
+
 def test_M2_w_arpack():
     """
     Test the action of the 2-level  preconditioner

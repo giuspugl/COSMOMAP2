@@ -363,11 +363,12 @@ class SparseLO(lp.LinearOperator):
         Flags the time samples related to bad pixels to -1.
         """
         N=self.nrows
-        pixs=self.pairs
         o2n=self.old2new
+
+        pixs=self.pairs
         code = """
-	       int i,pixel;
-           for ( i=0;i<N;++i){
+	      int i,pixel;
+          for ( i=0;i<N;++i){
             pixel=pixs(i);
             if (pixel == -1) continue;
             pixs(i)=o2n(pixel);
@@ -379,7 +380,11 @@ class SparseLO(lp.LinearOperator):
 	               #include <stdio.h>
                    #include <omp.h>
 	               #include <math.h>""",
-              libraries=['gomp'],type_converters=weave.converters.blitz)
+            libraries=['gomp'],type_converters=weave.converters.blitz)
+
+
+
+
     def initializeweights(self,phi,w):
         """
         Pre-compute the quantitities needed for the implementation of :math:`(A^T A)`
@@ -411,7 +416,7 @@ class SparseLO(lp.LinearOperator):
             The eigenvalues are needed to define the mask of bad constrained pixels whose
             condition number is :math:`\gg 1`.
 
-        - *If*  ``pol=3``:
+        - *If*  ``pol=3``*:
             each block of the matrix :math:`(A^T A)`  is a ``3 x 3`` matrix:
 
             .. csv-table::
@@ -478,6 +483,7 @@ class SparseLO(lp.LinearOperator):
             mask=np.where(cond_num<=self.threshold )[0]
             self.mask=np.intersect1d(mask1,mask)
 
+
     def __init__(self,n,m,pix_samples,phi=None,pol=1,w=None,pixel_schema=None,threshold_cond=1.e3):
         self.ncols=n
 
@@ -493,8 +499,8 @@ class SparseLO(lp.LinearOperator):
         self.initializeweights(phi,w)
         self.repixelization()
         self.flagging_samples()
+
         self.ncols=len(self.obspix)
-        n=self.ncols
         if pol==3:
             self.__runcase='IQU'
             super(SparseLO, self).__init__(nargin=self.pol*self.ncols,nargout=self.nrows, matvec=self.mult_iqu,
@@ -687,7 +693,6 @@ class BlockDiagonalLO(lp.LinearOperator):
                 self.counts=A.counts
                 self.cos=A.cosine
                 self.sin=A.sine
-        print "initialized"
 
     def mult(self,x):
         """
