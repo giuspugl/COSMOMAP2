@@ -182,8 +182,12 @@ def compare_maps(outm,inm,pol,patch,figname=None,remove_offset=True,norm='hist')
         key to the normalization of the color scale, ( `None`, `hist`, `log`)
 
     """
-    #unseen=np.where(mask ==0)[0]
-    #observ=np.where(mask !=0)[0]
+    if pol==1:
+        unseen=np.where(outm ==0)[0]
+        observ=np.where(outm !=0)[0]
+    else :
+        unseen=np.where(outm[0] ==0)[0]
+        observ=np.where(outm[0] !=0)[0]
 
     coord_dict={'ra23':[-13.45,-32.09]}
     coords=coord_dict[patch]
@@ -192,8 +196,7 @@ def compare_maps(outm,inm,pol,patch,figname=None,remove_offset=True,norm='hist')
         inm=subtract_offset(inm,observ,pol)
 
     if pol==1:
-        unseen=np.where(outm ==0)[0]
-        observ=np.where(outm !=0)[0]
+
         maxval=max(inm[observ])
         minval=min(inm[observ])
         inm[unseen]=hp.UNSEEN
@@ -208,8 +211,7 @@ def compare_maps(outm,inm,pol,patch,figname=None,remove_offset=True,norm='hist')
         #hp.graticule(dpar=5,dmer=5,local=True)
 
     elif pol==3:
-        unseen=np.where(outm[0] ==0)[0]
-        observ=np.where(outm[0] !=0)[0]
+
         strnmap=['I','Q','U']
         figcount=231
         for i in [1,2]:
@@ -232,8 +234,6 @@ def compare_maps(outm,inm,pol,patch,figname=None,remove_offset=True,norm='hist')
     elif pol==2:
         strnmap=['Q','U']
         figcount=231
-        unseen=np.where(outm[0] ==0)[0]
-        observ=np.where(outm[0] !=0)[0]
         for i in range(2):
             maxval=max(inm[i][observ])
             minval=min(inm[i][observ])
