@@ -23,10 +23,12 @@ class TestCoarseOperator_I():
         pol=1
         d,pairs,phi,t,diag=self.data
         N   =   BlockLO(blocksize,t,offdiag=True)
-        P   =   SparseLO(self.npix,self.nt,pairs,phi,pol)
-        self.npix=P.ncols
-        B   =   BlockDiagonalLO(P,self.npix,pol=pol)
-        Mbd =   BlockDiagonalPreconditionerLO(P,self.npix,pol=pol)
+        processd =  ProcessTimeSamples(pairs,self.npix,pol=pol ,phi=phi)
+        self.npix=   processd.get_new_pixel[0]
+        P   =   SparseLO(self.npix,self.nt,pairs,pol=pol,angle_processed=processd)
+        Mbd =   BlockDiagonalPreconditionerLO(processd ,self.npix,pol=pol)
+        B   =   BlockDiagonalLO(processd,self.npix,pol=pol)
+
         A   =   P.T*N*P
         tol=1.e-5
         eigv ,Z=spla.eigsh(A,M=B,Minv=Mbd,k=5,which='SM',ncv=15,tol=tol)
@@ -73,10 +75,12 @@ class TestCoarseOperator_QU():
         pol=2
         d,pairs,phi,t,diag=self.data
         N   =   BlockLO(blocksize,t,offdiag=True)
-        P   =   SparseLO(self.npix,self.nt,pairs,phi,pol)
-        self.npix=P.ncols
-        B   =   BlockDiagonalLO(P,self.npix,pol=pol)
-        Mbd =   BlockDiagonalPreconditionerLO(P,self.npix,pol=pol)
+        processd =  ProcessTimeSamples(pairs,self.npix,pol=pol ,phi=phi)
+        self.npix=   processd.get_new_pixel[0]
+        P   =   SparseLO(self.npix,self.nt,pairs,pol=pol,angle_processed=processd)
+        Mbd =   BlockDiagonalPreconditionerLO(processd ,self.npix,pol=pol)
+        B   =   BlockDiagonalLO(processd,self.npix,pol=pol)
+
         A   =   P.T*N*P
         tol=1.e-5
         eigv ,Z=spla.eigsh(A,M=B,Minv=Mbd,k=5,which='SM',ncv=15,tol=tol)
@@ -122,10 +126,11 @@ class TestCoarseOperator_IQU():
         pol=3
         d,pairs,phi,t,diag=self.data
         N   =   BlockLO(blocksize,t,offdiag=True)
-        P   =   SparseLO(self.npix,self.nt,pairs,phi,pol)
-        self.npix=P.ncols
-        B   =   BlockDiagonalLO(P,self.npix,pol=pol)
-        Mbd =   BlockDiagonalPreconditionerLO(P,self.npix,pol=pol)
+        processd =  ProcessTimeSamples(pairs,self.npix,pol=pol ,phi=phi)
+        self.npix=   processd.get_new_pixel[0]
+        P   =   SparseLO(self.npix,self.nt,pairs,pol=pol,angle_processed=processd)
+        Mbd =   BlockDiagonalPreconditionerLO(processd ,self.npix,pol=pol)
+        B   =   BlockDiagonalLO(processd,self.npix,pol=pol)
         A   =   P.T*N*P
         tol=1.e-5
         eigv ,Z=spla.eigsh(A,M=B,Minv=Mbd,k=5,which='SM',ncv=15,tol=tol)

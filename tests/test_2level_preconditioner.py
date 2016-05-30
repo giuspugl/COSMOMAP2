@@ -16,28 +16,24 @@ def test_2level_preconditioner():
     N=BlockLO(blocksize,t,offdiag=True)
     runcase={'I':1,'QU':2,'IQU':3}
     for pol in runcase.values():
-        P=SparseLO(npix,nt,pairs,phi,pol=pol )
-        npix=P.ncols
+        npix     =  40
+        processd =  ProcessTimeSamples(pairs,npix,pol=pol ,phi=phi)
+        npix=   processd.get_new_pixel[0]
+        P   =   SparseLO(npix,nt,pairs,pol=pol,angle_processed=processd)
+        x0  =   np.zeros(pol*npix)
+        M =   BlockDiagonalPreconditionerLO(processd ,npix,pol=pol)
+        B   =   BlockDiagonalLO(processd,npix,pol=pol)
         x0=np.ones(pol*npix)
-        #M=InverseLO(P.T*diagN*P,method=spla.cg)
-        M=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
         tol=1.e-4
-        #print nb,nt,npix
         b=P.T*N*d
         A=P.T*N*P
-        #B=(P.T*P).to_array()
-
-        B=BlockDiagonalLO(P,npix,pol=pol)
         # Build deflation supspace
 
         start=time.clock()
         eigv ,Z=spla.eigsh(A,M=B,Minv=M,k=5,v0=x0,which='SM',ncv=15,tol=tol)
-        #eigv,Z=spla.eigs(A,k=6,which='SM',ncv=14,tol=tol)
         end=time.clock()
-        #print "time to eigenv: %g"%(end-start)
 
         r=Z.shape[1]
-        #print r
         # Build Coarse operator
         Az=Z*0.
         for i in xrange(r):

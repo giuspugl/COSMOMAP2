@@ -10,24 +10,23 @@ def test_deflation_operator():
     being Z.T*Z a r x r matrix, r =rank(Z)
     """
 
-    nt,npix,nb=400,20,2
+    nt,nb=400,2
     blocksize=nt/nb
-    d,pairs,phi,t,diag=system_setup(nt,npix,nb)
     runcase={'I':1,'QU':2,'IQU':3}
     for pol in runcase.values():
+        npix=80
+        d,pairs,phi,t,diag=system_setup(nt,npix,nb)
         N=BlockLO(blocksize,t,offdiag=True)
-        P=SparseLO(npix,nt,pairs,phi,pol=pol )
-        npix=P.ncols
-
-        x0=np.zeros(pol*npix)
-
-        Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
-        #print nb,nt,npix
+        processd =  ProcessTimeSamples(pairs,npix,pol=pol ,phi=phi)
+        npix=   processd.get_new_pixel[0]
+        P   =   SparseLO(npix,nt,pairs,pol=pol,angle_processed=processd)
+        x0  =   np.zeros(pol*npix)
+        Mbd =   BlockDiagonalPreconditionerLO(processd ,npix,pol=pol)
         b=P.T*N*d
         A=P.T*N*P
         # Build deflation supspace
         tol=1.e-4
-        B=BlockDiagonalLO(P,npix,pol=pol)
+        B=BlockDiagonalLO(processd,npix,pol=pol)
         eigv ,Z=spla.eigsh(A,M=B,Minv=Mbd,k=5,which='SM',ncv=15,tol=tol)
         r=Z.shape[1]
         rank= np.linalg.matrix_rank(Z)
@@ -50,4 +49,4 @@ def test_deflation_operator():
 
         assert np.allclose(y2,y) and np.allclose(s2,s)
 filter_warnings("ignore")
-#test_deflation_operator()
+test_deflation_operator()

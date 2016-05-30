@@ -16,19 +16,18 @@ def test_block_diagonal_operator():
         for pol in runcase.values():
             blocksize=nt/nb
             for i in a:
-                #print pol*i,nt
                 npix=int(i)
                 d,pairs,phi,t,diag=system_setup(nt,npix,nb)
+                processd =ProcessTimeSamples(pairs,npix,pol=pol ,phi=phi)
+                npix=processd.get_new_pixel[0]
+                P=SparseLO(npix,nt,pairs,pol=pol,angle_processed=processd)
                 x=np.ones(pol*npix)
-                P=SparseLO(npix,nt,pairs,phi,pol=pol)
-                npix=P.ncols
-                Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
-                invMbd=BlockDiagonalLO(P,npix,pol=pol)
+                Mbd=BlockDiagonalPreconditionerLO(processd,npix,pol=pol)
+                invMbd=BlockDiagonalLO(processd,npix,pol=pol)
                 #invMbd and P.T*P  operate in the same on to a pixel vector
                 y=invMbd*x
                 y2=P.T*P*x
 
-                #show_matrix_form(invMbd*Mbd)
                 assert np.allclose(y,y2)
 
                 # invMbd*Mbd = Identity
@@ -36,6 +35,33 @@ def test_block_diagonal_operator():
                 v=Mbd*invMbd*x
                 assert np.allclose(v,x)
 
-filter_warnings("ignore")
 
-#test_block_diagonal_operator()
+def test_SPD_properties_block_diagonal_preconditioner():
+    """
+    to converge there has to be Symmetric Positive Definite.
+    This test the BlockDiagonalPreconditioner Linear operator implemented as
+    the explicit inverse of the matrix ``P.T*N*P``.
+    """
+    nb=6
+    blocksize=2*[500,400,124]
+    nt=sum(blocksize)
+    npix=64
+    runcase={'I':1,'QU':2,'IQU':3}
+    for pol in runcase.values():
+        d,pairs,phi,t,diag=system_setup(nt,npix,nb)
+        N=BlockLO(blocksize,diag,offdiag=False)
+        processd =ProcessTimeSamples(pairs,npix,pol=pol ,phi=phi,w=N.diag)
+        npix=processd.get_new_pixel[0]
+        P=SparseLO(npix,nt,pairs,pol=pol,angle_processed=processd)
+        #construct the block diagonal operator
+        randarray=np.random.rand(pol*npix)
+        A=P.T*N*P
+        assert  np.allclose(A*randarray, A.T *randarray)
+        assert scalprod(randarray,A*randarray)>0.
+
+        Mbd=BlockDiagonalPreconditionerLO(processd,npix,pol)
+        assert  np.allclose(Mbd*randarray, Mbd.T *randarray)
+        assert scalprod(randarray,Mbd*randarray)>0.
+
+
+filter_warnings("ignore")

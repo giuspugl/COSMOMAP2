@@ -49,11 +49,13 @@ def test_eigenvalue_routine_for_symmetric_matrix():
     blocksize=nt/nb
     d,pairs,phi,t,diag=system_setup(nt,npix,nb)
     N=BlockLO(blocksize,t,offdiag=True)
-    P=SparseLO(npix,nt,pairs,phi,pol=pol,w=None )
-    npix=P.ncols
+    processd =  ProcessTimeSamples(pairs,npix,pol=pol ,phi=phi)
+    npix=   processd.get_new_pixel[0]
+    P   =   SparseLO(npix,nt,pairs,pol=pol,angle_processed=processd)
+    x0  =   np.zeros(pol*npix)
+    Mbd =   BlockDiagonalPreconditionerLO(processd ,npix,pol=pol)
+
     x0=np.zeros(pol*npix)
-    Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
-    #print nb,nt,npix
 
     b=P.T*N*d
     A=P.T*N*P

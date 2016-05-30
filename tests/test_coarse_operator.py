@@ -12,20 +12,20 @@ def test_coarse_operator():
     d,pairs,phi,t,diag=system_setup(nt,npix,nb)
     c=bash_colors()
     runcase={'I':1,'QU':2,'IQU':3}
+    N=BlockLO(blocksize,t,offdiag=True)
+    diagN=lp.DiagonalOperator(diag*nt)
     for pol in runcase.values():
-
-        P=SparseLO(npix,nt,pairs,phi,pol)
-        npix=P.ncols
+        npix     =  20
+        processd =  ProcessTimeSamples(pairs,npix,pol=pol ,phi=phi)
+        npix=   processd.get_new_pixel[0]
+        P   =   SparseLO(npix,nt,pairs,pol=pol,angle_processed=processd)
+        Mbd =   BlockDiagonalPreconditionerLO(processd ,npix,pol=pol)
+        B   =   BlockDiagonalLO(processd,npix,pol=pol)
         x0=np.zeros(pol*npix)
-        N=BlockLO(blocksize,t,offdiag=True)
-        Mbd=BlockDiagonalPreconditionerLO(P,npix,pol=pol)
         b=P.T*N*d
         A=P.T*N*P
-        diagN=lp.DiagonalOperator(diag*nt)
 
         tol=1.e-5
-        B=BlockDiagonalLO(P,npix,pol=pol)
-        #B=(P.T*P).to_array()
         eigv ,Z=spla.eigsh(A,M=B,Minv=Mbd,k=5,which='SM',ncv=15,tol=tol)
         r=Z.shape[1]
         Zd=DeflationLO(Z)

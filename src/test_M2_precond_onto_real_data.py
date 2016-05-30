@@ -4,8 +4,12 @@ import numpy as np
 from interfaces import *
 from utilities import *
 import scipy.sparse.linalg as spla
+import sys
 import scipy.linalg as la
 import time
+
+filter_warnings("ignore")
+
 def test_M2_precond_onto_real_data():
 
     """
@@ -17,25 +21,36 @@ def test_M2_precond_onto_real_data():
     #filelist=['data/20120718_093931.hdf5','data/20131011_092136.hdf5']
     filelist=['data/20120718_093931.hdf5']
     d,t,phi,pixs,hp_pixs,ground,subscan_nsample,tstart,samples_per_bolopair,bolos_per_ces=\
-                read_multiple_ces(filelist,pol, npairs=1,filtersubscan=True)
+                read_multiple_ces(filelist,pol, npairs=10,filtersubscan=True)
                 #read_from_data_with_subscan_resize('data/20120718_093931.hdf5',pol=pol)
+
     nt,npix,nb=len(d),len(hp_pixs),len(t)
-    print nt,npix,nb,len(hp_pixs[pixs])
+    print nt,npix,nb
+
+    CESs= ProcessTimeSamples(pixs,npix,hp_pixs,pol=pol,phi=phi)
+    npix,hp_pixs=CESs.get_new_pixel
+
     N=BlockLO(nt/nb,t,offdiag=False)
 
-    P=SparseLO(npix,nt,pixs,phi,pixel_schema=hp_pixs,pol=pol,w=N.diag)
+    P=SparseLO(npix,nt,pixs,angle_processed=CESs,pol=pol)
+    Mbd=BlockDiagonalPreconditionerLO(CESs,npix,pol)
+
+    B=BlockDiagonalLO(CESs,npix,pol)
+    F=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs)
+    b=P.T*F*d
+    A=P.T*F*P
+
+    show_matrix_form(Mbd)
+    show_matrix_form(B)
+
+    """
     pr=profile_run()
 
     npix=P.ncols
     hp_pixs=P.obspix
-    F=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs)
     b=P.T*F*d
 
-    A=P.T*F*P
-    Mbd=BlockDiagonalPreconditionerLO(P,npix,pol)
-    B=BlockDiagonalLO(P,npix,pol)
-    show_matrix_form(Mbd*B)
-    show_matrix_form(B)
+
     if pol==1:
         fname='data/map_BD_i_cmb_'+str(nside)+'.fits'
         inm=hp.read_map('data/cmb_r0.2_3.5arcmin_128.fits')
@@ -44,32 +59,30 @@ def test_M2_precond_onto_real_data():
         fname='data/map_BD_iqu_cmb_'+str(nside)+'.fits'
         inm=hp.read_map('data/cmb_r0.2_3.5arcmin_128.fits',field=[0,1,2])
 
-
     x0=np.zeros(pol*npix)
     # Build deflation supspace
-    h=[]
-    w=[]
-    tol=1.e-7
-    B=Mbd*A
-    tstart=time.clock()
-    w,h=arnoldi(B,Mbd*b,x0=x0,tol=tol,maxiter=1,inner_m=pol*npix)
-    tend=time.clock()
-    print "Arnoldi algorithm took %g minutes."%((tend-tstart)/60.)
-
-    m=len(w)
-
-    H=build_hess(h,m)
-    z,y=la.eig(H,check_finite=False)
-
-    # smaller eigenvalues <30% of the energy
-    total_energy=np.sqrt(sum(abs(z)**2))
-    #eps=.4*abs(max(z))
-    eps= .2 * total_energy
-
-    Z,r= build_Z(z,y, w, eps)
-
+    c=bash_colors()
+    n_eig=5
+    n_iters=20
+    ncv=3*n_eig
+    try:
+        eigv ,Z=spla.eigsh(A,M=B,Minv=Mbd,k=n_eig,which='SM',ncv=  ncv,maxiter=n_iters,v0=b,tol=1.e-3)
+    except RuntimeError, e:
+        print c.bold(c.fail("No convergence w/ %d Arnoldi vectors and  %d Arnoldi restarts!")%(ncv,n_iters))
+        eigv,Z=e.eigenvalues,e.eigenvectors
+        if len(eigv)==0:
+            sys.exit(1)
+        print c.warning("Deflation w/ %d  eigenvectors instead  of %d requested ")%(len(eigv),n_eig )
+    print eigv
+    #Z,r=read_ritz_eigenvectors_from_hdf5('data/ritz_eigenvectors_'+P.maptype+'_filter_20120718_093931.hdf5')
     Zd=DeflationLO(Z)
-    write_ritz_eigenvectors_to_hdf5(Zd.z,'data/ritz_eigenvectors_'+P.maptype+'_filter_20120718_093931.hdf5')
+    #write_ritz_eigenvectors_to_hdf5(Z,'data/ritz_eigenvectors_'+P.maptype+'_filter_20120718_093931.hdf5')
+    r=Z.shape[1]
+    for i in range(r):
+        hp_map=reorganize_map(Z[:,i],hp_pixs,npix,nside,pol)
+        show_map(hp_map,pol,'ra23')
+
+
     #Z=read_ritz_eigenvectors_from_hdf5('data/ritz_eigenvectors_filter_20120718_093931.hdf5',pol*npix)
     Az=Z*0.
     for i in xrange(r):
@@ -111,7 +124,7 @@ def test_M2_precond_onto_real_data():
     mask=obspix2mask(hp_pixs,pixs,nside,'data/mask_ra23.fits',write=False)
 
     compare_maps(hp_map,inm,pol,'ra23',mask)
-
+    """
 
 def test_M2_w_arpack():
     """
