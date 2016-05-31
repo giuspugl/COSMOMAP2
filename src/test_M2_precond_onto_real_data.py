@@ -18,8 +18,8 @@ def test_M2_precond_onto_real_data():
     """
     nside=128
     pol=2
-    #filelist=['data/20120718_093931.hdf5','data/20131011_092136.hdf5']
-    filelist=['data/20120718_093931.hdf5']
+    filelist=['data/20120718_093931.hdf5','data/20131011_092136.hdf5']
+    #filelist=['data/20120718_093931.hdf5']
     d,t,phi,pixs,hp_pixs,ground,subscan_nsample,tstart,samples_per_bolopair,bolos_per_ces=\
                 read_multiple_ces(filelist,pol, npairs=10,filtersubscan=True)
                 #read_from_data_with_subscan_resize('data/20120718_093931.hdf5',pol=pol)
@@ -36,29 +36,31 @@ def test_M2_precond_onto_real_data():
     Mbd=BlockDiagonalPreconditionerLO(CESs,npix,pol)
 
     B=BlockDiagonalLO(CESs,npix,pol)
-    F=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs)
-    b=P.T*F*d
-    A=P.T*F*P
+    #F=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs)
+    #b=P.T*F*d
+    #A=P.T*F*P
+    b=P.T * d
+    A=P.T*P
 
-    show_matrix_form(Mbd)
-    show_matrix_form(B)
+    #show_matrix_form(Mbd)
+    hp_map=reorganize_map(b,hp_pixs,npix,nside,pol)
+    #mask=obspix2mask(hp_pixs,pixs,nside)
 
-    """
+
     pr=profile_run()
-
-    npix=P.ncols
-    hp_pixs=P.obspix
-    b=P.T*F*d
-
-
     if pol==1:
         fname='data/map_BD_i_cmb_'+str(nside)+'.fits'
         inm=hp.read_map('data/cmb_r0.2_3.5arcmin_128.fits')
+    elif pol==2:
+        inm=hp.read_map('data/cmb_r0.2_3.5arcmin_128.fits',field=[1,2])
 
     elif pol==3:
         fname='data/map_BD_iqu_cmb_'+str(nside)+'.fits'
         inm=hp.read_map('data/cmb_r0.2_3.5arcmin_128.fits',field=[0,1,2])
 
+    #compare_maps(hp_map,inm,pol,'ra23',remove_offset=False)
+    show_map(hp_map,pol,'ra23')
+    """
     x0=np.zeros(pol*npix)
     # Build deflation supspace
     c=bash_colors()
@@ -123,7 +125,7 @@ def test_M2_precond_onto_real_data():
     hp_map=reorganize_map(x,hp_pixs,npix,nside,pol,fname,write=False)
     mask=obspix2mask(hp_pixs,pixs,nside,'data/mask_ra23.fits',write=False)
 
-    compare_maps(hp_map,inm,pol,'ra23',mask)
+    compare_maps(hp_map,inm,pol,'ra23')
     """
 
 def test_M2_w_arpack():

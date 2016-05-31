@@ -99,6 +99,8 @@ def read_multiple_ces(filelist,pol, npairs=None,filtersubscan=True):
             subscan.append(outdata[8][0])
             tstart.append(outdata[8][1])
     hp_pixs.append(outdata[4])
+    flagging_not_in_allCES(pixs)
+
     if filtersubscan:
         return np.concatenate(d),np.concatenate(weight),np.concatenate(polang),\
             np.concatenate(pixs),np.concatenate(hp_pixs),np.concatenate(ground),\
@@ -107,12 +109,27 @@ def read_multiple_ces(filelist,pol, npairs=None,filtersubscan=True):
         return np.concatenate(d),np.concatenate(weight),np.concatenate(polang),\
             np.concatenate(pixs), np.concatenate(hp_pixs),np.concatenate(ground)
 
-def flagging_subscan(unflag_pix,subscan):
+def flagging_not_in_allCES(CES_pixs):
+    """
+    Flag all the pixels which are not in common in  the considered  CES.
+    """
+    nces=len(CES_pixs)
+    for pixs in CES_pixs[1:nces]:
+        for k in xrange(len(pixs)):
+            if not ( pixs[k] in CES_pixs[0]):
+                pixs[k]=-1
+    pass
+
+
+def flagging_subscan(unflagged_pix,subscan):
+    """
+    Flag all the samples outside a subscan.
+    """
     nsamples=subscan[0]
     tstart=subscan[1]
     k=0
     for t,n in zip(tstart,nsamples):
-        unflag_pix[k:t]=-1
+        unflagged_pix[k:t]=-1
         k=t+n
     #return unflag_pix
 
