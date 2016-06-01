@@ -114,11 +114,19 @@ def flagging_not_in_allCES(CES_pixs):
     Flag all the pixels which are not in common in  the considered  CES.
     """
     nces=len(CES_pixs)
-    for pixs in CES_pixs[1:nces]:
-        for k in xrange(len(pixs)):
-            if not ( pixs[k] in CES_pixs[0]):
-                pixs[k]=-1
+    first,ices=len(CES_pixs[0]),0
+    for i in xrange(nces):
+        tmp=len(CES_pixs[i])
+        if tmp<first:
+                first,ices=tmp,i
+    #print "minimum at %d w/ %d"%(ices,first)
+    minimal_ces=set(CES_pixs[ices])
+    for i in range(nces):
+        to_flag=[x for x in CES_pixs[i] if x not in minimal_ces ]
+        CES_pixs[i][to_flag]=-1
     pass
+
+
 
 
 def flagging_subscan(unflagged_pix,subscan):
