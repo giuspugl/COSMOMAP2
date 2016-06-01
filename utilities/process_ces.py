@@ -43,26 +43,126 @@ class ProcessTimeSamples(object):
 
 
     """
-    def __init__(self, pixs,npix,obspix=None,pol=1 ,phi=None,w=None,threshold_cond=1.e3):
+    def __init__(self, pixs,npix,obspix=None,pol=1 ,phi=None,w=None,threshold_cond=1.e3,obspix2=None):
         self.pixs= pixs
         self.oldnpix=npix
         self.nsamples=len(pixs)
         self.pol=pol
+        self.threshold=threshold_cond
         if w is None:
             w=np.ones(self.nsamples)
         if obspix  is None:
             obspix =np.arange(self.nsamples)
-        self.pixs=pixs
         self.obspix=obspix
-        self.threshold=threshold_cond
-        self.initializeweights(phi,w)
-        self.repixelization()
-        self.flagging_samples()
-
+        if obspix2 is None:
+            self.initializeweights(phi,w)
+            self.repixelization()
+            self.flagging_samples()
+        else:
+            self.SetObspix(obspix2)
+            self.flagging_samples()
+            self.compute_arrays(phi,w)
 
     @property
     def get_new_pixel(self):
         return self.__new_npix,self.obspix
+
+    def SetObspix(self,new_obspix):
+        n_new_pix=0
+        n_removed_pix=0
+        self.old2new=np.zeros(self.oldnpix,dtype=int)
+        for jpix in xrange(self.oldnpix):
+            if self.obspix[jpix] in new_obspix:
+                self.old2new[jpix]=n_new_pix
+                n_new_pix+=1
+            else:
+                self.old2new[jpix]=-1
+                n_removed_pix+=1
+
+        c=bash_colors()
+        print c.header("___"*30)
+        print c.blue("%d pixels excluded\nRepixelization  w/ %d pixels."%(n_removed_pix,n_new_pix))
+        print c.header("___"*30)
+        self.obspix=new_obspix
+        self.__new_npix=n_new_pix
+
+    def compute_arrays(self,w,phi):
+        npix=self.__new_npix
+        N=self.nsamples
+        pixs=self.pixs
+        if self.pol==1:
+            self.counts=np.zeros(npix)
+            counts=self.counts
+            includes=r"""
+            #include <stdio.h>
+            #include <omp.h>
+            #include <math.h>
+            """
+            code = """
+            int i,pixel;
+            for ( i=0;i<N;++i){
+                pixel=pixs(i);
+                if (pixel == -1) continue;
+                counts(pixel)+=w(i);
+                }
+            """
+            inline(code,['pixs','w','counts','N'],verbose=1,
+            extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+                		    support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
+        else:
+            self.cos=np.cos(2.*phi)
+            self.sin=np.sin(2.*phi)
+            self.cos2=np.zeros(npix)
+            self.sin2=np.zeros(npix)
+            self.sincos=np.zeros(npix)
+            cos,sin =   self.cos,self.sin
+            cos2,sin2,sincos=   self.cos2,self.sin2,self.sincos
+            if self.pol==2:
+                includes=r"""
+                #include <stdio.h>
+                #include <omp.h>
+                #include <math.h>
+                """
+                code = """
+                int i,pixel;
+                for ( i=0;i<N;++i){
+                    pixel=pixs(i);
+                    if (pixel == -1) continue;
+                    cos2(pixel)     +=  w(i)*cos(i)*cos(i);
+                    sin2(pixel)     +=  w(i)*sin(i)*sin(i);
+                    sincos(pixel)   +=  w(i)*sin(i)*cos(i);
+                    }
+                """
+                inline(code,['pixs','w','cos','sin','cos2','sin2','sincos','N'],verbose=1,
+                extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+                support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
+            elif self.pol==3:
+                self.counts=np.zeros(npix)
+                self.cosine=np.zeros(npix)
+                self.sine=np.zeros(npix)
+                counts,cosine,sine= self.counts,self.cosine,self.sine
+                includes=r"""
+                #include <stdio.h>
+                #include <omp.h>
+                #include <math.h>
+                """
+                code = """
+                int i,pixel;
+                for ( i=0;i<N;++i){
+                    pixel=pixs(i);
+                    if (pixel == -1) continue;
+                    counts(pixel)   +=  w(i);
+                    cosine(pixel)   +=  w(i)*cos(i);
+                    sine(pixel)     +=  w(i)*sin(i);
+                    cos2(pixel)     +=  w(i)*cos(i)*cos(i);
+                    sin2(pixel)     +=  w(i)*sin(i)*sin(i);
+                    sincos(pixel)   +=  w(i)*sin(i)*cos(i);
+                }
+                """
+                inline(code,['pixs','w','cos','sin','counts','cosine','sine','cos2','sin2','sincos','N'],
+                extra_compile_args=['-march=native  -O3  -fopenmp ' ],verbose=1,
+                support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
+
 
     def repixelization(self):
         """
@@ -184,22 +284,79 @@ class ProcessTimeSamples(object):
             whose count is :math:`\geq 3`.
 
         """
+        N=self.nsamples
+        pixs=self.pixs
         if self.pol==1:
             self.counts=np.zeros(self.oldnpix)
-            for j,weight in zip(self.pixs,w):
-                self.counts[j]+=weight
+            counts=self.counts
+            includes=r"""
+                    #include <stdio.h>
+                    #include <omp.h>
+                    #include <math.h>"""
+            code = """
+	              int i,pixel;
+                  for ( i=0;i<N;++i){
+                    pixel=pixs(i);
+                    if (pixel == -1) continue;
+                    counts(pixel)+=w(i);
+                    }
+                    """
+            inline(code,['pixs','w','counts','N'],verbose=1,
+                    extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		            support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
             self.mask=np.where(self.counts >0)[0]
-
-        if self.pol==2:
+        else:
             self.cos=np.cos(2.*phi)
             self.sin=np.sin(2.*phi)
             self.cos2=np.zeros(self.oldnpix)
             self.sin2=np.zeros(self.oldnpix)
             self.sincos=np.zeros(self.oldnpix)
-            for j,weight,cos,sin in zip(self.pixs,w,self.cos,self.sin):
-                self.cos2[j]    +=  weight*cos*cos
-                self.sin2[j]    +=  weight*sin*sin
-                self.sincos[j]  +=  weight*cos*sin
+            cos,sin         =   self.cos,self.sin
+            cos2,sin2,sincos=   self.cos2,self.sin2,self.sincos
+            if self.pol==2:
+                includes=r"""
+                        #include <stdio.h>
+                        #include <omp.h>
+                        #include <math.h>"""
+                code = """
+                      int i,pixel;
+                      for ( i=0;i<N;++i){
+                        pixel=pixs(i);
+                        if (pixel == -1) continue;
+                        cos2(pixel)     +=  w(i)*cos(i)*cos(i);
+                        sin2(pixel)     +=  w(i)*sin(i)*sin(i);
+                        sincos(pixel)   +=  w(i)*sin(i)*cos(i);
+                        }
+                        """
+                inline(code,['pixs','w','cos','sin','cos2','sin2','sincos','N'],verbose=1,
+                        extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+                        support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
+            elif self.pol==3:
+                self.counts=np.zeros(self.oldnpix)
+                self.cosine=np.zeros(self.oldnpix)
+                self.sine=np.zeros(self.oldnpix)
+                counts,cosine,sine= self.counts,self.cosine,self.sine
+                includes=r"""
+                        #include <stdio.h>
+                        #include <omp.h>
+                        #include <math.h>"""
+                code = """
+                      int i,pixel;
+                      for ( i=0;i<N;++i){
+                        pixel=pixs(i);
+                        if (pixel == -1) continue;
+                        counts(pixel)+=w(i);
+                        cosine(pixel)     +=  w(i)*cos(i);
+                        sine(pixel)       +=  w(i)*sin(i);
+                        cos2(pixel)     +=  w(i)*cos(i)*cos(i);
+                        sin2(pixel)     +=  w(i)*sin(i)*sin(i);
+                        sincos(pixel)   +=  w(i)*sin(i)*cos(i);
+                        }
+                        """
+                inline(code,['pixs','w','cos','sin','counts','cosine','sine','cos2','sin2','sincos','N'],
+                        extra_compile_args=['-march=native  -O3  -fopenmp ' ],verbose=1,
+                        support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
+
             det=(self.cos2*self.sin2)-(self.sincos*self.sincos)
             tr=self.cos2+self.sin2
             sqrt=np.sqrt(tr*tr/4. -det)
@@ -207,30 +364,8 @@ class ProcessTimeSamples(object):
             lambda_min=tr/2. - sqrt
             cond_num=np.abs(lambda_max/lambda_min)
             mask=np.where(cond_num<=self.threshold)[0]
-            self.mask=mask
-        if self.pol==3:
-            self.cos=np.cos(2.*phi)
-            self.sin=np.sin(2.*phi)
-            self.counts=np.zeros(self.oldnpix)
-            self.cosine=np.zeros(self.oldnpix)
-            self.sine=np.zeros(self.oldnpix)
-            self.cos2=np.zeros(self.oldnpix)
-            self.sin2=np.zeros(self.oldnpix)
-            self.sincos=np.zeros(self.oldnpix)
-            for pix,weight,cos,sin in zip(self.pixs,w,self.cos,self.sin):
-                self.counts[pix]    +=  weight
-                self.cosine[pix]    +=  weight*cos
-                self.sine[pix]      +=  weight*sin
-                self.cos2[pix]      +=  weight*cos*cos
-                self.sin2[pix]      +=  weight*sin*sin
-                self.sincos[pix]    +=  weight*sin*cos
-
-            det_block=(self.cos2*self.sin2)-(self.sincos*self.sincos)
-            Tr_block=self.cos2+self.sin2
-            sqrt=np.sqrt(Tr_block*Tr_block/4. -det_block)
-            lambda_max=Tr_block/2. + sqrt
-            lambda_min=Tr_block/2. - sqrt
-            cond_num=np.abs(lambda_max/lambda_min)
-            mask1=np.where(self.counts>2)[0]
-            mask=np.where(cond_num<=self.threshold )[0]
-            self.mask=np.intersect1d(mask1,mask)
+            if self.pol==2:
+                    self.mask=mask
+            elif self.pol==3:
+                mask2=np.where(self.counts>2)[0]
+                self.mask=np.intersect1d(mask2,mask)

@@ -18,8 +18,8 @@ def test_M2_precond_onto_real_data():
     """
     nside=128
     pol=2
-    filelist=['data/20120718_093931.hdf5','data/20131011_092136.hdf5']
-    #filelist=['data/20120718_093931.hdf5']
+    #filelist=['data/20120718_093931.hdf5','data/20131011_092136.hdf5']
+    filelist=['data/20120718_093931.hdf5']
     d,t,phi,pixs,hp_pixs,ground,subscan_nsample,tstart,samples_per_bolopair,bolos_per_ces=\
                 read_multiple_ces(filelist,pol, npairs=10,filtersubscan=True)
                 #read_from_data_with_subscan_resize('data/20120718_093931.hdf5',pol=pol)

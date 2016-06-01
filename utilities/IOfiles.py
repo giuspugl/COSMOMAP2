@@ -234,7 +234,16 @@ def read_ritz_eigenvectors_from_hdf5(filename):
     z=eigens[...]
     f.close()
     return z,n_eigenvals
+def read_obspix_from_hdf5(filename):
+    """
+    read from hdf5 file the obspix array containing
+    the observed pixels in the Healpix ordering .
 
+    """
+    f=h5.File(filename,"r")
+    obsp=f["obspix"][...]
+    f.close()
+    return obsp
 
 def write_to_hdf5(filename,obs_pixels,noise_values,d,phi=None):
     """
