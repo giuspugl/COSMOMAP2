@@ -69,7 +69,7 @@ class FilterLO(lp.LinearOperator):
                         return_val=mean;
                         """
                     dmean = inline(code,['pixs','d','start','end'],verbose=1,
-                          extra_compile_args=['-march=native ' ],
+                          extra_compile_args=[' -O3  -fopenmp' ],
                           support_code = r"""
                     	               #include <stdio.h>
                     	               #include <math.h>""",
@@ -146,7 +146,7 @@ class SparseLO(lp.LinearOperator):
             }
         """
         res = inline(code,['pixs','v','x','Nrows'],verbose=1,
-		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		      extra_compile_args=['  -O3  -fopenmp ' ],
 		            support_code = r"""
 	                   #include <stdio.h>
                        #include <omp.h>
@@ -169,7 +169,7 @@ class SparseLO(lp.LinearOperator):
             }
         """
         inline(code,['pixs','v','x','Nrows'],verbose=1,
-		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		      extra_compile_args=['  -O3  -fopenmp ' ],
 		            support_code = r"""
 	                   #include <stdio.h>
                        #include <omp.h>
@@ -198,7 +198,7 @@ class SparseLO(lp.LinearOperator):
             }
         """
         inline(code,['pixs','v','x','Nrows','cos','sin'],verbose=1,
-		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		      extra_compile_args=['  -O3  -fopenmp ' ],
 		      support_code = r"""
 	               #include <stdio.h>
                    #include <omp.h>
@@ -222,7 +222,7 @@ class SparseLO(lp.LinearOperator):
             }
         """
         inline(code,['pixs','v','vec_out','Nrows','cos','sin'],verbose=1,
-		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		      extra_compile_args=['  -O3  -fopenmp ' ],
 		      support_code = r"""
 	               #include <stdio.h>
                    #include <omp.h>
@@ -257,7 +257,7 @@ class SparseLO(lp.LinearOperator):
             }
         """
         inline(code,['pixs','v','x','Nrows','cos','sin'],verbose=1,
-		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		      extra_compile_args=['  -O3  -fopenmp ' ],
 		      support_code = r"""
 	               #include <stdio.h>
                    #include <omp.h>
@@ -285,7 +285,7 @@ class SparseLO(lp.LinearOperator):
             }
         """
         inline(code,['pixs','v','x','N','cos','sin'],verbose=1,
-		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		      extra_compile_args=[' -O3  -fopenmp ' ],
 		      support_code = r"""
 	               #include <stdio.h>
                    #include <omp.h>

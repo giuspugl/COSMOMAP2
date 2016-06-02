@@ -42,7 +42,7 @@ def test_M2_precond_onto_real_data():
     b=P.T * d
     A=P.T*P
 
-    #show_matrix_form(Mbd)
+    show_matrix_form(Mbd*B)
     hp_map=reorganize_map(b,hp_pixs,npix,nside,pol)
     #mask=obspix2mask(hp_pixs,pixs,nside)
 

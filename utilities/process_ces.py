@@ -48,13 +48,13 @@ class ProcessTimeSamples(object):
         self.oldnpix=npix
         self.nsamples=len(pixs)
         self.pol=pol
-        self.threshold=threshold_cond
         if w is None:
             w=np.ones(self.nsamples)
         if obspix  is None:
             obspix =np.arange(self.nsamples)
         self.obspix=obspix
         if obspix2 is None:
+            self.threshold=threshold_cond
             self.initializeweights(phi,w)
             self.repixelization()
             self.flagging_samples()
@@ -233,7 +233,7 @@ class ProcessTimeSamples(object):
             }
         """
         inline(code,['pixs','o2n','N'],verbose=1,
-		      extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+		      extra_compile_args=['  -O3  -fopenmp ' ],
 		      support_code = r"""
 	               #include <stdio.h>
                    #include <omp.h>
@@ -302,7 +302,7 @@ class ProcessTimeSamples(object):
                     }
                     """
             inline(code,['pixs','w','counts','N'],verbose=1,
-                    extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+                    extra_compile_args=['  -O3  -fopenmp ' ],
 		            support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
             self.mask=np.where(self.counts >0)[0]
         else:
@@ -329,7 +329,7 @@ class ProcessTimeSamples(object):
                         }
                         """
                 inline(code,['pixs','w','cos','sin','cos2','sin2','sincos','N'],verbose=1,
-                        extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+                        extra_compile_args=['  -O3  -fopenmp ' ],
                         support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
             elif self.pol==3:
                 self.counts=np.zeros(self.oldnpix)
@@ -354,7 +354,7 @@ class ProcessTimeSamples(object):
                         }
                         """
                 inline(code,['pixs','w','cos','sin','counts','cosine','sine','cos2','sin2','sincos','N'],
-                        extra_compile_args=['-march=native  -O3  -fopenmp ' ],verbose=1,
+                        extra_compile_args=['  -O3  -fopenmp ' ],verbose=1,
                         support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
 
             det=(self.cos2*self.sin2)-(self.sincos*self.sincos)
@@ -369,3 +369,4 @@ class ProcessTimeSamples(object):
             elif self.pol==3:
                 mask2=np.where(self.counts>2)[0]
                 self.mask=np.intersect1d(mask2,mask)
+        print len(self.mask)
