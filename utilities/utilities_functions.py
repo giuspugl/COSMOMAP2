@@ -5,6 +5,14 @@ import math as m
 import warnings
 
 
+def is_sorted(seq):
+    """
+    Check if sequence is sorted
+    bool
+    """
+    return all(seq[i] <= seq[i + 1] for i in range(len(seq) - 1))
+
+
 class bash_colors:
     """
     This class contains the necessary definitions to print to bash

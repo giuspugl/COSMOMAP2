@@ -48,6 +48,7 @@ class ProcessTimeSamples(object):
         self.oldnpix=npix
         self.nsamples=len(pixs)
         self.pol=pol
+        self.bashc=bash_colors()
         if w is None:
             w=np.ones(self.nsamples)
         if obspix  is None:
@@ -60,32 +61,54 @@ class ProcessTimeSamples(object):
             self.flagging_samples()
         else:
             self.SetObspix(obspix2)
-            self.flagging_samples()
+            self.flagging_old2new()
             self.compute_arrays(phi,w)
+
 
     @property
     def get_new_pixel(self):
         return self.__new_npix,self.obspix
 
     def SetObspix(self,new_obspix):
-        n_new_pix=0
-        n_removed_pix=0
-        self.old2new=np.zeros(self.oldnpix,dtype=int)
-        for jpix in xrange(self.oldnpix):
-            if self.obspix[jpix] in new_obspix:
-                self.old2new[jpix]=n_new_pix
-                n_new_pix+=1
-            else:
-                self.old2new[jpix]=-1
-                n_removed_pix+=1
+        self.old2new =  np.full(self.oldnpix,-1,dtype=np.int32)
+        if not( is_sorted(self.obspix) and is_sorted(new_obspix)) :
+            print self.bashc.warning("Obspix isn't sorted, sorting it..")
+            indexsorted=np.argsort(self.obspix,kind='quicksort')
+            self.obspix=self.obspix[indexsorted]
 
-        c=bash_colors()
-        print c.header("___"*30)
-        print c.blue("%d pixels excluded\nRepixelization  w/ %d pixels."%(n_removed_pix,n_new_pix))
-        print c.header("___"*30)
+        index_of_new_in_old_obspix = np.searchsorted(self.obspix, new_obspix)
+        self.old2new[index_of_new_in_old_obspix] = np.arange(len(index_of_new_in_old_obspix))
+        try:
+            assert np.allclose(new_obspix , self.obspix[index_of_new_in_old_obspix])
+        except:
+            print self.bashc.fail("new_obspix contains pixels which aren't in the old obspix")
+
         self.obspix=new_obspix
-        self.__new_npix=n_new_pix
+        self.__new_npix=len(new_obspix)
+        print self.bashc.bold("NT=%d\tNPIX=%d"%(self.nsamples,self.__new_npix))
 
+    def flagging_old2new(self):
+        """
+        Flags the time samples related to bad pixels to -1.
+        """
+        N=self.nsamples
+        o2n=self.old2new
+        pixs=self.pixs
+        code = r"""
+	          int i,pixel;
+              for ( i=0;i<N;++i){
+                pixel=pixs(i);
+                if (pixel == -1) continue;
+                pixs(i)=o2n(pixel);
+                }
+                """
+        inline(code,['pixs','o2n','N'],verbose=1,
+		        extra_compile_args=['  -O3  -fopenmp ' ],
+		        support_code = r"""
+	            #include <stdio.h>
+                #include <omp.h>
+	            #include <math.h>""",
+            libraries=['gomp'],type_converters=weave.converters.blitz)
     def compute_arrays(self,w,phi):
         npix=self.__new_npix
         N=self.nsamples
@@ -208,13 +231,13 @@ class ProcessTimeSamples(object):
                 self.counts=np.delete(self.counts,xrange(n_new_pix,self.oldnpix))
                 self.sine=np.delete(self.sine,xrange(n_new_pix,self.oldnpix))
                 self.cosine=np.delete(self.cosine,xrange(n_new_pix,self.oldnpix))
-        c=bash_colors()
-        print c.header("___"*30)
-        print c.blue("Found %d pathological pixels\nRepixelizing  w/ %d pixels."%(n_removed_pix,n_new_pix))
-        print c.header("___"*30)
+        print self.bashc.header("___"*30)
+        print self.bashc.blue("Found %d pathological pixels\nRepixelizing  w/ %d pixels."%(n_removed_pix,n_new_pix))
+        print self.bashc.header("___"*30)
         #resizing all the arrays
         self.obspix=np.delete(self.obspix,xrange(n_new_pix,self.oldnpix))
         self.__new_npix=n_new_pix
+        print self.bashc.bold("NT=%d\tNPIX=%d"%(self.nsamples,self.__new_npix))
 
     def flagging_samples(self):
         """
@@ -369,4 +392,3 @@ class ProcessTimeSamples(object):
             elif self.pol==3:
                 mask2=np.where(self.counts>2)[0]
                 self.mask=np.intersect1d(mask2,mask)
-        print len(self.mask)
