@@ -110,7 +110,7 @@ def show_map(outm,pol,patch,figname=None,norm='hist'):
         key to the normalization of the color scale, ( `None`, `hist`, `log`)
 
     """
-    coord_dict={'ra23':[-13.45,-32.09]}
+    coord_dict={'ra23':[-14.7,-33.09]}
     coords=coord_dict[patch]
     if pol==1:
         unseen=np.where(outm ==0)[0]
@@ -189,7 +189,7 @@ def compare_maps(outm,inm,pol,patch,figname=None,remove_offset=True,norm='hist')
         unseen=np.where(outm[0] ==0)[0]
         observ=np.where(outm[0] !=0)[0]
 
-    coord_dict={'ra23':[-13.45,-32.09]}
+    coord_dict={'ra23':[-14.7,-33.09]}
     coords=coord_dict[patch]
 
     if remove_offset:

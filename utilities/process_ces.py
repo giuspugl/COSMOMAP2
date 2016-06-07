@@ -61,9 +61,8 @@ class ProcessTimeSamples(object):
             self.flagging_samples()
         else:
             self.SetObspix(obspix2)
-            self.flagging_old2new()
+            self.flagging_samples()
             self.compute_arrays(phi,w)
-
 
     @property
     def get_new_pixel(self):
@@ -72,6 +71,7 @@ class ProcessTimeSamples(object):
     def SetObspix(self,new_obspix):
         self.old2new =  np.full(self.oldnpix,-1,dtype=np.int32)
         if not( is_sorted(self.obspix) and is_sorted(new_obspix)) :
+
             print self.bashc.warning("Obspix isn't sorted, sorting it..")
             indexsorted=np.argsort(self.obspix,kind='quicksort')
             self.obspix=self.obspix[indexsorted]
@@ -87,29 +87,7 @@ class ProcessTimeSamples(object):
         self.__new_npix=len(new_obspix)
         print self.bashc.bold("NT=%d\tNPIX=%d"%(self.nsamples,self.__new_npix))
 
-    def flagging_old2new(self):
-        """
-        Flags the time samples related to bad pixels to -1.
-        """
-        N=self.nsamples
-        o2n=self.old2new
-        pixs=self.pixs
-        code = r"""
-	          int i,pixel;
-              for ( i=0;i<N;++i){
-                pixel=pixs(i);
-                if (pixel == -1) continue;
-                pixs(i)=o2n(pixel);
-                }
-                """
-        inline(code,['pixs','o2n','N'],verbose=1,
-		        extra_compile_args=['  -O3  -fopenmp ' ],
-		        support_code = r"""
-	            #include <stdio.h>
-                #include <omp.h>
-	            #include <math.h>""",
-            libraries=['gomp'],type_converters=weave.converters.blitz)
-    def compute_arrays(self,w,phi):
+    def compute_arrays(self,phi,w):
         npix=self.__new_npix
         N=self.nsamples
         pixs=self.pixs
@@ -121,17 +99,17 @@ class ProcessTimeSamples(object):
             #include <omp.h>
             #include <math.h>
             """
-            code = """
+            code ="""
             int i,pixel;
             for ( i=0;i<N;++i){
                 pixel=pixs(i);
                 if (pixel == -1) continue;
                 counts(pixel)+=w(i);
                 }
-            """
+                """
             inline(code,['pixs','w','counts','N'],verbose=1,
             extra_compile_args=['-march=native  -O3  -fopenmp ' ],
-                		    support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
+        		    support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
         else:
             self.cos=np.cos(2.*phi)
             self.sin=np.sin(2.*phi)
@@ -159,6 +137,7 @@ class ProcessTimeSamples(object):
                 inline(code,['pixs','w','cos','sin','cos2','sin2','sincos','N'],verbose=1,
                 extra_compile_args=['-march=native  -O3  -fopenmp ' ],
                 support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
+
             elif self.pol==3:
                 self.counts=np.zeros(npix)
                 self.cosine=np.zeros(npix)

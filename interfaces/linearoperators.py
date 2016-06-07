@@ -152,6 +152,7 @@ class SparseLO(lp.LinearOperator):
                        #include <omp.h>
 	                   #include <math.h>""",
                        libraries=['gomp'],type_converters=weave.converters.blitz)
+
         return x
     def rmult(self,v):
         """
@@ -175,6 +176,7 @@ class SparseLO(lp.LinearOperator):
                        #include <omp.h>
 	                   #include <math.h>""",
                        libraries=['gomp'],type_converters=weave.converters.blitz)
+
 
         return x
     def mult_qu(self,v):
@@ -555,7 +557,6 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
             determ=self.counts*(self.cos2*self.sin2 - self.sincos*self.sincos)\
                 - self.cos*self.cos*self.sin2 - self.sin*self.sin*self.cos2\
                 +2.*self.cos*self.sin*self.sincos
-
             for pix,det,s2,c2,cs,c,s,hits in zip(self.pixels,determ,self.sin2,self.cos2,self.sincos,\
                                 self.cos,self.sin,self.counts):
                 y[3*pix]  =((c2*s2-cs*cs)*x[3*pix]+ (s*cs-c*s2)  *x[3*pix+1]  +( c*cs-s*c2)  *x[3*pix+2])/det
@@ -563,11 +564,16 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
                 y[3*pix+2]=((c*cs -s*c2) *x[3*pix]+(-hits*cs+c*s)*x[3*pix+1]  +(hits*c2-c*c) *x[3*pix+2])/det
 
         elif self.pol==2:
-            det=(self.cos2*self.sin2)-(self.sincos*self.sincos)
-            for pix,s2,c2,cs,determ in zip( self.pixels,self.sin2,self.cos2,self.sincos,det):
-                y[pix*2]  =  (s2  *x[2*pix] - cs *x[pix*2+1])/determ
-                y[pix*2+1]=  (-cs  *x[2*pix] + c2 *x[pix*2+1])/determ
-
+            determ=(self.cos2*self.sin2)-(self.sincos*self.sincos)
+            for pix,s2,c2,cs,det in zip( self.pixels,self.sin2,self.cos2,self.sincos,determ):
+                det=(c2*s2)-(cs*cs)
+                tr=c2+s2
+                sqrt=np.sqrt(tr*tr/4. -det)
+                lambda_max=tr/2. + sqrt
+                lambda_min=tr/2. - sqrt
+                cond_num=np.abs(lambda_max/lambda_min)
+                y[pix*2]  =  ( s2  *x[2*pix] - cs *x[pix*2+1])/det
+                y[pix*2+1]=  (-cs  *x[2*pix] + c2 *x[pix*2+1])/det
         return y
 
     def __init__(self,CES,n,pol=1):

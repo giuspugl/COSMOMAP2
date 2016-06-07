@@ -10,11 +10,11 @@ def test_deflation_operator():
     being Z.T*Z a r x r matrix, r =rank(Z)
     """
 
-    nt,nb=400,2
+    nt,nb=1000,2
     blocksize=nt/nb
     runcase={'I':1,'QU':2,'IQU':3}
     for pol in runcase.values():
-        npix=80
+        npix=20
         d,pairs,phi,t,diag=system_setup(nt,npix,nb)
         N=BlockLO(blocksize,t,offdiag=True)
         processd =  ProcessTimeSamples(pairs,npix,pol=pol ,phi=phi)
@@ -27,7 +27,7 @@ def test_deflation_operator():
         # Build deflation supspace
         tol=1.e-4
         B=BlockDiagonalLO(processd,npix,pol=pol)
-        eigv ,Z=spla.eigsh(A,M=B,Minv=Mbd,k=5,which='SM',ncv=15,tol=tol)
+        eigv ,Z=spla.eigsh(A,M=B,Minv=Mbd,k=3,which='SM',ncv=15,maxiter=40,tol=tol)
         r=Z.shape[1]
         rank= np.linalg.matrix_rank(Z)
         #rank(Z) must be equal to the size of the deflation subspace
