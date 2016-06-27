@@ -55,7 +55,7 @@ class FilterLO(lp.LinearOperator):
                     tmpmask=mask[start:end]
                     size=len(np.where(tmpmask==True)[0])
                     if size==0:
-                        print " Zero samples to compute the average value"
+                        #print " Zero samples to compute the average value"
                         continue
                     dmean=np.mean(d[start:end][tmpmask])
                     vec_out[start:end ]=d[start:end] - dmean
@@ -73,6 +73,7 @@ class FilterLO(lp.LinearOperator):
         for ch,ts,ns,nb in zip(self.chunks,self.tstart,self.nsamples,self.nbolos):
             n=nb*ns
             bolo_iter=0
+
             while ( bolo_iter<nb):
                 for i,j in zip(ch,ts):
                     start=j+(ns*bolo_iter) + offset
@@ -80,7 +81,7 @@ class FilterLO(lp.LinearOperator):
                     tmpmask=mask[start:end]
                     size=len(np.where(tmpmask==True)[0])
                     if size<=self.poly_order:
-                        print "too few samples to compute Legendre Polynomials"
+                        #print "too few samples to compute Legendre Polynomials"
                         continue
                     legendres=get_legendre_polynomials(self.poly_order,size)
                     p=np.zeros(size)
