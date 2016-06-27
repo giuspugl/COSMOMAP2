@@ -1,4 +1,5 @@
 from scipy.linalg import get_blas_funcs
+from scipy.special import legendre
 import numpy as np
 
 def dgemm(A,B):
@@ -30,3 +31,18 @@ def scalprod(a,b):
     """
     dot=get_blas_funcs('dot', (a,b))
     return dot(a,b)
+
+
+def get_legendre_polynomials(polyorder, size):
+    """
+    Returns a ``size x polyorder`` matrix whose  each column contains
+    the respective Legendre polynomial in :math:`\left[ -1,1 \right]`.
+    """
+
+    legendres=np.empty([size,polyorder+1])
+    x=np.linspace(-1,1,size)
+    for i in xrange(polyorder+1):
+        L=legendre(i  )
+        legendres[:,i]=L(x)
+
+    return legendres
