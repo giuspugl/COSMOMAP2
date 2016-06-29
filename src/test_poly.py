@@ -52,7 +52,7 @@ def test_poly_filtering():
     pol=1
     filelist=['data/20120718_093931.hdf5']
     d,t,phi,pixs,hp_pixs,ground,subscan_nsample,tstart,samples_per_bolopair,bolos_per_ces=\
-                read_multiple_ces(filelist,pol, npairs=50,filtersubscan=True)
+                read_multiple_ces(filelist,pol, npairs=None,filtersubscan=True)
 
     nt,npix,nb=len(d),len(hp_pixs),len(t)
 
@@ -63,7 +63,7 @@ def test_poly_filtering():
     P=SparseLO(npix,nt,pixs,angle_processed=CESs,pol=pol)
 
     F=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs,poly_order=0)
-    F1=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs,poly_order=1)
+    F1=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs,poly_order=3)
     s=time.clock()
     fd1=F1*d
     e=time.clock()
@@ -77,6 +77,6 @@ def test_poly_filtering():
     pl.plot(fd1,label='after filtering 1')
     plt.legend(loc='best')#
 
-    pl.show()
+    #pl.show()
 test_poly_filtering()
 #test_polynomials()

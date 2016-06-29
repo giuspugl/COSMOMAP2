@@ -9,11 +9,12 @@ import scipy.sparse.linalg as spla
 from utilities import *
 
 class FilterLO(lp.LinearOperator):
-    #TODO  DOC
     """
     When applied to :math:`n_t` vector, this  operator filters out
-    its components by removing a constant (its mean value) within a *subscan*
-    interval.
+    *Legendre  Polynomial* components from it up to a certain order.
+    In the simple case of a :math:`0-th` order polynomial the effect
+     of filter consists of subtracting the offset from the samples.
+
 
     **Parameters**
 
@@ -32,11 +33,13 @@ class FilterLO(lp.LinearOperator):
     - ``pix_samples``: {array}
         the same argument as in :class:`SparseLO`, encoding all the pixels observed
         during observations.
+    - ``poly_order``: {int}
+        maximum order of polynomials to be subtracted from the samples.
 
     .. note::
 
         To be consistent with tha analysis :class:`FilterLO` does not take into account
-        all the flagged pixels.
+        all the flagged samples.
 
 
     """
@@ -45,22 +48,20 @@ class FilterLO(lp.LinearOperator):
         pixs=self.pixels
         offset=0
         mask=np.ma.masked_greater_equal(pixs,0).mask
-        for ch,ts,ns,nb in zip(self.chunks,self.tstart,self.nsamples,self.nbolos):
+        for subsc,ts,ns,nb in zip(self.subscans,self.tstart,self.nsamples,self.nbolos):
             n=nb*ns
             bolo_iter=0
             while ( bolo_iter<nb):
-                for i,j in zip(ch,ts):
+                for i,j in zip(subsc,ts):
                     start=j+(ns*bolo_iter) + offset
                     end=start + i
                     tmpmask=mask[start:end]
                     size=len(np.where(tmpmask==True)[0])
                     if size==0:
-                        #print " Zero samples to compute the average value"
+                        #Zero samples to compute the average value
                         continue
                     dmean=np.mean(d[start:end][tmpmask])
                     vec_out[start:end ]=d[start:end] - dmean
-                    #flagged=np.logical_not(tmpmask)
-                    #vec_out[start:end][flagged]= 0
                 bolo_iter+=1
             offset+=n
         return vec_out
@@ -70,42 +71,59 @@ class FilterLO(lp.LinearOperator):
         pixs=self.pixels
         offset=0
         mask=np.ma.masked_greater_equal(pixs,0).mask
-        for ch,ts,ns,nb in zip(self.chunks,self.tstart,self.nsamples,self.nbolos):
+        for subsc,ts,ns,nb in zip(self.subscans,self.tstart,self.nsamples,self.nbolos):
             n=nb*ns
             bolo_iter=0
 
             while ( bolo_iter<nb):
-                for i,j in zip(ch,ts):
+                for i,j in zip(subsc,ts):
                     start=j+(ns*bolo_iter) + offset
                     end=start + i
                     tmpmask=mask[start:end]
                     size=len(np.where(tmpmask==True)[0])
                     if size<=self.poly_order:
-                        #print "too few samples to compute Legendre Polynomials"
+                        #too few samples to filter Legendre Polynomials
                         continue
-                    legendres=get_legendre_polynomials(self.poly_order,size)
+
+                    legendres = self.legendres[i]
+                    if size != i :
+                        #orthonormalize the basis in the unflagged
+                        # samples by a  QR decomposition
+                        q,r   =   np.linalg.qr(legendres[tmpmask])
+                        legendres=q
+
                     p=np.zeros(size)
                     for k in range(self.poly_order+1):
-                        filterbasis=legendres[:,k]/norm2(legendres[:,k])
+                        #normalize Polynomial basis
+                        filterbasis=legendres[:,k]
                         p+=scalprod(filterbasis,d[start:end][tmpmask])*filterbasis
-
                     vec_out[start:end][tmpmask]=d[start:end][tmpmask] - p
-                    #flagged=np.logical_not(tmpmask)
-                    #vec_out[start:end][flagged]= 0 #np.nan
                 bolo_iter+=1
             offset+=n
         return vec_out
+
+    def compute_legendres(self):
+        subscan_sizes=[]
+        for array  in self.subscans:
+            for i in array :
+                if not subscan_sizes.__contains__(i):
+                    subscan_sizes.append(i)
+                else : continue
+        self.legendres={size: get_legendre_polynomials(self.poly_order,size) for size in subscan_sizes}
+
+
+
 
     def __init__(self,size,subscan_nsample,samples_per_bolopair,bolos_per_ces, pix_samples,poly_order=0):
         self.n=size
         self.nsamples=samples_per_bolopair
         self.nbolos=bolos_per_ces
-        self.chunks=subscan_nsample[0]
+        self.subscans=subscan_nsample[0]
         self.tstart=subscan_nsample[1]
         if not (type(self.nsamples) is list):
             self.nsamples=[self.nsamples]
             self.nbolos=[self.nbolos]
-            self.chunks=[self.chunks]
+            self.subscans=[self.subscans]
             self.tstart=[self.tstart]
         self.pixels=pix_samples
         self.poly_order=poly_order
@@ -113,6 +131,8 @@ class FilterLO(lp.LinearOperator):
             super(FilterLO, self).__init__(nargin=size,nargout=size, matvec=self.mult,
                                                     symmetric=False )
         elif poly_order>0:
+            self.compute_legendres()
+
             super(FilterLO, self).__init__(nargin=size,nargout=size, matvec=self.polyfilter,
                                                     symmetric=False )
 

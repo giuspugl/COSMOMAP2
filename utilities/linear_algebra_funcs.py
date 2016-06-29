@@ -35,14 +35,14 @@ def scalprod(a,b):
 
 def get_legendre_polynomials(polyorder, size):
     """
-    Returns a ``size x polyorder`` matrix whose  each column contains
-    the respective Legendre polynomial in :math:`\left[ -1,1 \right]`.
+    Returns a ``size x polyorder`` matrix whose   columns contain
+    the respective Legendre polynomial in :math:`\left[ -1,1 \right` normalized.
     """
 
     legendres=np.empty([size,polyorder+1])
     x=np.linspace(-1,1,size)
     for i in xrange(polyorder+1):
         L=legendre(i  )
-        legendres[:,i]=L(x)
+        legendres[:,i]=L(x)/norm2(L(x))
 
     return legendres
