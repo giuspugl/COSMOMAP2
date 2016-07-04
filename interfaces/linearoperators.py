@@ -55,6 +55,35 @@ class FilterLO(lp.LinearOperator):
                 for i,j in zip(subsc,ts):
                     start=j+(ns*bolo_iter) + offset
                     end=start + i
+                    code = r"""
+                	    int j;
+                        double mean=0.;
+                        double counter=0.;
+                        int tstart=start;
+                        int tend=end;
+                        for (j=tstart;j < tend;++j){
+                            if (pixs(j) == -1){
+                                continue;
+                            }
+                            mean+= d(j);
+                            counter+=1.;
+                        }
+                        mean=mean/ counter;
+                        return_val=mean;
+                        """
+                    dmean = inline(code,['pixs','d','start','end'],verbose=1,
+                          extra_compile_args=[' -O3  -fopenmp' ],
+                          support_code = r"""
+                    	               #include <stdio.h>
+                    	               #include <math.h>""",
+                          type_converters=weave.converters.blitz)
+                    if np.isinf(dmean) or np.isnan(dmean):
+                        continue
+                    vec_out[start:end ]=d[start:end] - dmean
+                bolo_iter+=1
+            offset+=n
+        return vec_out
+        """
                     tmpmask=mask[start:end]
                     size=len(np.where(tmpmask==True)[0])
                     if size==0:
@@ -65,7 +94,7 @@ class FilterLO(lp.LinearOperator):
                 bolo_iter+=1
             offset+=n
         return vec_out
-
+        """
     def polyfilter(self,d):
         vec_out=d*0.
         pixs=self.pixels
@@ -202,21 +231,26 @@ class SparseLO(lp.LinearOperator):
         x=np.zeros(self.ncols)
         Nrows=self.nrows
         pixs=self.pairs
+        #for i in xrange(Nrows):
+        #    if pixs[i]==-1:
+        #        continue
+        #    print i,self.pairs[i]
+        #    x[self.pairs[i]]+=v[i]
         code = r"""
-	       int i ;
+	      int i ;
            for ( i=0;i<Nrows;++i){
             if (pixs(i) == -1) continue;
+
             x(pixs(i))+=v(i);
             }
         """
         inline(code,['pixs','v','x','Nrows'],verbose=1,
 		      extra_compile_args=['  -O3  -fopenmp ' ],
 		            support_code = r"""
-	                   #include <stdio.h>
-                       #include <omp.h>
-	                   #include <math.h>""",
+	               #include <stdio.h>
+                   #include <omp.h>
+	               #include <math.h>""",
                        libraries=['gomp'],type_converters=weave.converters.blitz)
-
 
         return x
     def mult_qu(self,v):

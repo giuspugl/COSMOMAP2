@@ -42,7 +42,7 @@ def read_from_data(filename,pol,npairs=None):
         group=f['bolo_pair_'+str(i)]
         pixs_pair.append(group['pixel'][...])
         polang_pair.append(group['pol_angle'][...])
-        ground_pair.append(group['ground'][...])
+        ground_pair.append(group['ground'][...].astype("int"))
         if pol== 1:
             d_pair.append(group['sum'][...])
             weight_pair.append(group['weight_sum'][...])
@@ -182,7 +182,7 @@ def read_from_data_with_subscan_resize(filename,pol,npairs=None):
         flagging_subscan(pix,subscan)
         pixs_pair.append(pix)
         polang_pair.append(group['pol_angle'][...])
-        ground_pair.append(group['ground'][...])
+        ground_pair.append(group['ground'][...].astype("int"))
         if pol== 1:
             d_pair.append(group['sum'][...])
             weight_pair.append(group['weight_sum'][...])
