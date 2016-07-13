@@ -71,20 +71,20 @@ def arnoldi(A, b, x0=None, tol=1e-5, maxiter=1000, inner_m=30 ):
             break
 
         # -- ARNOLDI ALGRITHM
-        vs0 = scal(1.0/r_norm, r_outer)
+        vs0 = scal(1.0/r_norm, r_outer)# q=x/||x||
         hs = []
         vs = [vs0]
         v_new = None
 
         for j in xrange(1, 1 + inner_m) :
-            v_new=matvec(vs[j-1])
+            v_new=matvec(vs[j-1])# r=A q
             v_new2 = v_new.copy()
             #     ++ orthogonalize
             hcur = []
             for v in vs:
-                alpha = dot(v, v_new)
+                alpha = dot(v, v_new)# alpha= (q,r)
                 hcur.append(alpha)
-                v_new= axpy(v, v_new2, v.shape[0], -alpha)  # v_new -= alpha*v
+                v_new= axpy(v, v_new2, v.shape[0], -alpha)  # v_new -= alpha*v 
             hcur.append(norm2(v_new))
             #       ++ normalize
             v_new = scal(1.0/hcur[-1], v_new)

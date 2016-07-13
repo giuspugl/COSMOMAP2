@@ -83,18 +83,7 @@ class FilterLO(lp.LinearOperator):
                 bolo_iter+=1
             offset+=n
         return vec_out
-        """
-                    tmpmask=mask[start:end]
-                    size=len(np.where(tmpmask==True)[0])
-                    if size==0:
-                        #Zero samples to compute the average value
-                        continue
-                    dmean=np.mean(d[start:end][tmpmask])
-                    vec_out[start:end ]=d[start:end] - dmean
-                bolo_iter+=1
-            offset+=n
-        return vec_out
-        """
+
     def polyfilter(self,d):
         vec_out=d*0.
         pixs=self.pixels

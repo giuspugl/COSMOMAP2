@@ -27,7 +27,7 @@ def test_deflation_operator():
         # Build deflation supspace
         tol=1.e-4
         B=BlockDiagonalLO(processd,npix,pol=pol)
-        eigv ,Z=spla.eigsh(A,M=B,Minv=Mbd,k=3,which='SM',ncv=15,maxiter=40,tol=tol)
+        eigv ,Z=spla.eigsh(A,M=B,Minv=Mbd,k=5,which='SM',ncv=50,maxiter=40,tol=tol)
         r=Z.shape[1]
         rank= np.linalg.matrix_rank(Z)
         #rank(Z) must be equal to the size of the deflation subspace
