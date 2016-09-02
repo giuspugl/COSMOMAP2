@@ -7,18 +7,19 @@ import scipy.sparse.linalg as spla
 import sys
 import scipy.linalg as la
 import time
+import krypy as kp
 
 filter_warnings("ignore")
-
-def test_M2_precond_onto_real_data():
+def test_myarnoldi():
 
     """
     Test the action of the 2-level  preconditioner
     with a realistic scanning strategy.
     """
-    nside=128
+    nside=1024
     pol=2
     #filelist=['data/20120718_093931.hdf5','data/20131011_092136.hdf5']
+    #filelist=['/home/peppe/pb/mapmaker/data/20120718_050345.hdf5']
     filelist=['data/20120718_093931.hdf5']
     d,t,phi,pixs,hp_pixs,ground,subscan_nsample,tstart,samples_per_bolopair,bolos_per_ces=\
                 read_multiple_ces(filelist,pol, npairs=10,filtersubscan=True)
@@ -30,103 +31,91 @@ def test_M2_precond_onto_real_data():
     CESs= ProcessTimeSamples(pixs,npix,hp_pixs,pol=pol,phi=phi)
     npix,hp_pixs=CESs.get_new_pixel
 
-    N=BlockLO(nt/nb,t,offdiag=False)
+    P=SparseLO(npix,nt,pixs,angle_processed=CESs,pol=pol)
+    Mbd=BlockDiagonalPreconditionerLO(CESs,npix,pol)
+
+    F=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,\
+                bolos_per_ces,pixs,poly_order=1)
+
+    b=P.T*F*d
+    A=P.T*F*P
+    v,h,m=arnoldi(Mbd*A, Mbd*b, x0=np.ones(pol*npix), tol=1e-5, inner_m=pol*npix )
+    print m
+    H=build_hess(h,m)
+    from  numpy import linalg  as la
+    z,y=la.eigh(H)
+    thresh=1.e-2
+    Z,r=build_Z(z,y,v,thresh)
+    print z[:r]
+    return z[:r]
+
+
+
+def test_arnoldi_krypy():
+
+    """
+    Test the action of the 2-level  preconditioner
+    with a realistic scanning strategy.
+    """
+    nside=1024
+    pol=1
+    #filelist=['data/20120718_093931.hdf5','data/20131011_092136.hdf5']
+    filelist=['/home/peppe/pb/mapmaker/data/20120718_050345.hdf5']
+    #filelist=['data/20120718_093931.hdf5']
+    d,t,phi,pixs,hp_pixs,ground,subscan_nsample,tstart,samples_per_bolopair,bolos_per_ces=\
+                read_multiple_ces(filelist,pol, npairs=10,filtersubscan=True)
+                #read_from_data_with_subscan_resize('data/20120718_093931.hdf5',pol=pol)
+
+    nt,npix,nb=len(d),len(hp_pixs),len(t)
+    print nt,npix,nb
+
+    CESs= ProcessTimeSamples(pixs,npix,hp_pixs,pol=pol,phi=phi)
+    npix,hp_pixs=CESs.get_new_pixel
 
     P=SparseLO(npix,nt,pixs,angle_processed=CESs,pol=pol)
     Mbd=BlockDiagonalPreconditionerLO(CESs,npix,pol)
 
-    B=BlockDiagonalLO(CESs,npix,pol)
-    #F=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs)
-    #b=P.T*F*d
-    #A=P.T*F*P
-    b=P.T * d
-    A=P.T*P
+    F=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,\
+                bolos_per_ces,pixs,poly_order=0)
 
-    show_matrix_form(Mbd*B)
-    hp_map=reorganize_map(b,hp_pixs,npix,nside,pol)
-    #mask=obspix2mask(hp_pixs,pixs,nside)
-
+    b=P.T*F*d
+    A=P.T*F*P
 
     pr=profile_run()
-    if pol==1:
-        fname='data/map_BD_i_cmb_'+str(nside)+'.fits'
-        inm=hp.read_map('data/cmb_r0.2_3.5arcmin_128.fits')
-    elif pol==2:
-        inm=hp.read_map('data/cmb_r0.2_3.5arcmin_128.fits',field=[1,2])
 
-    elif pol==3:
-        fname='data/map_BD_iqu_cmb_'+str(nside)+'.fits'
-        inm=hp.read_map('data/cmb_r0.2_3.5arcmin_128.fits',field=[0,1,2])
+    x0=np.ones(pol*npix)
+    tol=1.e-5
+    V,H,m=run_krypy_arnoldi(A,x0,Mbd,tol)
+    Z,r  =find_ritz_eigenvalues(H,V)
 
-    #compare_maps(hp_map,inm,pol,'ra23',remove_offset=False)
-    show_map(hp_map,pol,'ra23')
-    """
-    x0=np.zeros(pol*npix)
-    # Build deflation supspace
-    c=bash_colors()
-    n_eig=5
-    n_iters=20
-    ncv=3*n_eig
-    try:
-        eigv ,Z=spla.eigsh(A,M=B,Minv=Mbd,k=n_eig,which='SM',ncv=  ncv,maxiter=n_iters,v0=b,tol=1.e-3)
-    except RuntimeError, e:
-        print c.bold(c.fail("No convergence w/ %d Arnoldi vectors and  %d Arnoldi restarts!")%(ncv,n_iters))
-        eigv,Z=e.eigenvalues,e.eigenvectors
-        if len(eigv)==0:
-            sys.exit(1)
-        print c.warning("Deflation w/ %d  eigenvectors instead  of %d requested ")%(len(eigv),n_eig )
-    print eigv
+    #write_ritz_eigenvectors_to_hdf5(Z,'data/ritz_eigenvectors_'+P.maptype+'_filter_20120718_093931.hdf5')
     #Z,r=read_ritz_eigenvectors_from_hdf5('data/ritz_eigenvectors_'+P.maptype+'_filter_20120718_093931.hdf5')
     Zd=DeflationLO(Z)
-    #write_ritz_eigenvectors_to_hdf5(Z,'data/ritz_eigenvectors_'+P.maptype+'_filter_20120718_093931.hdf5')
-    r=Z.shape[1]
-    for i in range(r):
-        hp_map=reorganize_map(Z[:,i],hp_pixs,npix,nside,pol)
-        show_map(hp_map,pol,'ra23')
-
-
-    #Z=read_ritz_eigenvectors_from_hdf5('data/ritz_eigenvectors_filter_20120718_093931.hdf5',pol*npix)
     Az=Z*0.
     for i in xrange(r):
         Az[:,i]=A*Z[:,i]
 
     AZd=DeflationLO(Az)
+
     # Build Coarse operator
     E=CoarseLO(Z,Az,r)
     #Build the 2-level preconditioner
     I= lp.IdentityOperator(pol*npix)
-
-    #R=I - A*Zd*E*Zd.T
     R=I - AZd*E*Zd.T
 
     M2=Mbd*R + Zd*E*Zd.T
-
-    AZ=[]
-    for i in Zd.z:
-        AZ.append(A*i)
+    print "\t MAZ=Z \t  RAZ=0 \t#ITERATIONS cg(A,Z,M2) \t w=||MAz||/||z|| \t ||z||\t (z_i , z_j)\n"
 
     for i in range(r):
-        assert (np.allclose(M2*AZ[i],Zd.z[i]) and norm2(R*AZ[i])<=1.e-10)
+        globals()['c']=0
+        x,info=spla.cg(A,Z[:,i],M=M2,x0=x0,tol=tol,maxiter=2,callback=count_iterations)
+        n_iters=globals()['c']
+        print "%d \t %r \t %r \t %d \t %g \t %g\t %g "%(i,np.allclose(M2*Az[:,i],Z[:,i]),norm2(R*Az[:,i])<=1.e-10,n_iters,norm2(Mbd*A*Z[:,i])/norm2(Z[:,i]),
+                                                        norm2(Z[:,i]),scalprod(Z[:,i],Z[:,i-1]))
+        #hp_map=reorganize_map(Z[:,i],hp_pixs,npix,nside,pol)
+        #show_map(hp_map,pol,'ra23',norm=None)
 
-    x0=np.zeros(pol*npix)
 
-    globals()['c']=0
-    def count_iterations(x):
-        globals()['c']+=1
-
-    pr.enable()
-    x,info=spla.cg(A,b,x0=x0,tol=tol,maxiter=100,M=M2,callback=count_iterations)
-    pr.disable()
-    print "After %d iteration. "%(globals()['c'])
-
-    output_profile(pr)
-    checking_output(info)
-
-    hp_map=reorganize_map(x,hp_pixs,npix,nside,pol,fname,write=False)
-    mask=obspix2mask(hp_pixs,pixs,nside,'data/mask_ra23.fits',write=False)
-
-    compare_maps(hp_map,inm,pol,'ra23')
-    """
 
 def test_M2_w_arpack():
     """
@@ -212,8 +201,9 @@ def count_iterations(x):
 
 
 
-
-
-test_M2_precond_onto_real_data()
-
+s=time.clock()
+test_arnoldi_krypy()
+e=time.clock()
+t2=e-s
+print t2
 #test_M2_w_arpack()

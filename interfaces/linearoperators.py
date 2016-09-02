@@ -8,6 +8,49 @@ from scipy.weave import inline
 import scipy.sparse.linalg as spla
 from utilities import *
 
+
+
+class GroundFilterLO(lp.LinearOperator):
+
+    def counts_in_groundbins(self,g):
+        counts=np.zeros(self.nbins)
+        N     = self.n
+
+        includes=r"""
+        #include <stdio.h>
+        #include <omp.h>
+        #include <math.h>
+        """
+        code ="""
+        int i,groundbin;
+        for ( i=0;i<N;++i){
+            groundbin=g(i);
+            if (groundbin == -1) continue;
+            counts(groundbin)+=1 ;
+            }
+            """
+        inline(code,['g','counts','N'],verbose=1,
+        extra_compile_args=['-march=native  -O3  -fopenmp ' ],
+                support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
+        return counts
+
+    def mult(self,v):
+        return v  -  self.Pg *v
+
+    def __init__(self,ground):
+        self.nbins  = int(max(ground))+1
+        self.n      = len(ground )
+        counts = self.counts_in_groundbins(ground )
+        G=SparseLO(self.nbins,self.n,ground)
+        G.counts=counts
+        invGtG = BlockDiagonalPreconditionerLO(G,self.nbins)
+
+        self.Pg = (G *invGtG *G.T)
+        super(GroundFilterLO, self).__init__(nargin=self.n,nargout=self.n, matvec=self.mult,
+                                                symmetric=False )
+
+
+
 class FilterLO(lp.LinearOperator):
     """
     When applied to :math:`n_t` vector, this  operator filters out
@@ -220,11 +263,7 @@ class SparseLO(lp.LinearOperator):
         x=np.zeros(self.ncols)
         Nrows=self.nrows
         pixs=self.pairs
-        #for i in xrange(Nrows):
-        #    if pixs[i]==-1:
-        #        continue
-        #    print i,self.pairs[i]
-        #    x[self.pairs[i]]+=v[i]
+
         code = r"""
 	      int i ;
            for ( i=0;i<Nrows;++i){

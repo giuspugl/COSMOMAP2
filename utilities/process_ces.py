@@ -43,8 +43,9 @@ class ProcessTimeSamples(object):
 
 
     """
-    def __init__(self, pixs,npix,obspix=None,pol=1 ,phi=None,w=None,threshold_cond=1.e3,obspix2=None):
+    def __init__(self, pixs,npix,obspix=None,pol=1 ,phi=None,w=None,ground=None,threshold_cond=1.e3,obspix2=None):
         self.pixs= pixs
+
         self.oldnpix=npix
         self.nsamples=len(pixs)
         self.pol=pol
@@ -54,6 +55,7 @@ class ProcessTimeSamples(object):
         if obspix  is None:
             obspix =np.arange(self.nsamples)
         self.obspix=obspix
+
         if obspix2 is None:
             self.threshold=threshold_cond
             self.initializeweights(phi,w)
@@ -63,6 +65,15 @@ class ProcessTimeSamples(object):
             self.SetObspix(obspix2)
             self.flagging_samples()
             self.compute_arrays(phi,w)
+
+        if ground is not None:
+            negs=np.ma.masked_less(ground,0)
+            #print len(ground[negs.mask]),len(ground[flags.mask]),len(ground[np.logical_and(flags.mask,negs.mask)])
+            flags =np.ma.masked_equal(pixs,-1)
+            totalflags=np.logical_or(negs.mask,flags.mask)
+            ground[totalflags]   =   -1
+            pixs[totalflags]     =   -1
+            self.ground     = ground
 
     @property
     def get_new_pixel(self):

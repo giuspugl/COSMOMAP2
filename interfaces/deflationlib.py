@@ -1,4 +1,7 @@
 from scipy.linalg import get_blas_funcs
+import scipy.sparse.linalg as spla
+import krypy as kp
+
 import numpy as np
 from utilities import *
 
@@ -55,55 +58,50 @@ def arnoldi(A, b, x0=None, tol=1e-5, maxiter=1000, inner_m=30 ):
     if b_norm == 0:
         b_norm = 1
 
-    for k_outer in xrange(maxiter):
-        r_outer = b - matvec(x0)
-        # -- determine input type routines
-        if axpy is None:
-            if np.iscomplexobj(r_outer) and not np.iscomplexobj(x0):
-                x0 = x0.astype(r_outer.dtype)
-            axpy, dot, scal = get_blas_funcs(['axpy', 'dot', 'scal'],
+    r_outer = b - matvec(x0)
+    # -- determine input type routines
+    if axpy is None:
+        if np.iscomplexobj(r_outer) and not np.iscomplexobj(x0):
+            x0 = x0.astype(r_outer.dtype)
+        axpy, dot, scal = get_blas_funcs(['axpy', 'dot', 'scal'],
                                               (x0, r_outer))
 
-        # -- check stopping condition
-        r_norm = norm2(r_outer)
-        if r_norm < tol * b_norm or r_norm < tol:
-            print "r_norm < tol * b_norm or r_norm < tol"
-            break
+    # -- check stopping condition
+    r_norm = norm2(r_outer)
+    if r_norm < tol * b_norm or r_norm < tol:
+        print "Arnoldi exited at the first iteration\nr_norm < tol * b_norm or r_norm < tol"
+        return None,None,0
+    # -- ARNOLDI ALGRITHM
+    vs0 = scal(1.0/r_norm, r_outer)# q=x/||x||
+    hs = []
+    vs = [vs0]
+    v_new = None
 
-        # -- ARNOLDI ALGRITHM
-        vs0 = scal(1.0/r_norm, r_outer)# q=x/||x||
-        hs = []
-        vs = [vs0]
-        v_new = None
+    for j in xrange(1, 1 + inner_m) :
+        v_new=matvec(vs[j-1])# r=A q
+        v_new2 = v_new.copy()
+        #     ++ orthogonalize
+        hcur = []
+        for v in vs:
+            alpha = dot(v, v_new)# alpha= (q,r)
+            hcur.append(alpha)
+            v_new= axpy(v, v_new2, v.shape[0], -alpha)  # v_new -= alpha*v
+        hcur.append(norm2(v_new))
+        #       ++ normalize
+        v_new = scal(1.0/hcur[-1], v_new)
+        if abs(v_new[j]*hcur[-1])<= tol:
+            print "--------------------------------------"
+            print "Computed  %d Ritz eigenvalues within the tolerance %.1g "%(j,tol)
+            print "--------------------------------------"
 
-        for j in xrange(1, 1 + inner_m) :
-            v_new=matvec(vs[j-1])# r=A q
-            v_new2 = v_new.copy()
-            #     ++ orthogonalize
-            hcur = []
-            for v in vs:
-                alpha = dot(v, v_new)# alpha= (q,r)
-                hcur.append(alpha)
-                v_new= axpy(v, v_new2, v.shape[0], -alpha)  # v_new -= alpha*v 
-            hcur.append(norm2(v_new))
-            #       ++ normalize
-            v_new = scal(1.0/hcur[-1], v_new)
-            if hcur[-1] <= tol:
-                print "--------------------------------------"
-                print "Computed  %d Ritz eigenvalues within the tolerance %.1g "%(j,tol)
-                print "--------------------------------------"
-
-
-                hs.append(hcur)
-                return vs,hs
-
-            vs.append(v_new)
             hs.append(hcur)
+            return vs,hs,j
 
-            if j==inner_m:
-                raise RuntimeError("Convergence not achieved within the Arnoldi algorithm")
-                return None,None
-
+        vs.append(v_new)
+        hs.append(hcur)
+        if j==inner_m:
+            raise RuntimeError("Convergence not achieved within the Arnoldi algorithm")
+            return None,None,j
 
 def build_hess(h,m):
     """
@@ -173,3 +171,41 @@ def build_Z(z,y,w,eps):
     print "++++++++++++++++++++++++++++++++++++"
     Z=dgemm(w,select_eigvec)
     return Z,r
+
+
+def run_krypy_arnoldi(A,x0,M, tol):
+    N=len(x0)
+    x0=x0.reshape((N,1))
+    Aop=spla.aslinearoperator(A)
+    prec=spla.aslinearoperator(M)
+
+    arnoldi = kp.utils.Arnoldi(Aop, x0,M=prec, maxiter=N, ortho='lanczos')
+    for m in xrange(N):
+        arnoldi.advance()
+        v,h,p=arnoldi.get()
+        resid = abs(h[m+1,m]*v[m,m+1])
+        if resid<=tol:
+            break
+    if m+1==N:
+        print "Convergence not achieved within the Arnoldi algorithm after %d iterations"%(m)
+    else:
+        print "--"*30
+        print "%g accuracy reached with %d Arnoldi iterations"%(tol,m)
+        print "--"*30
+
+    #orthonormalize the Arnoldi basis
+    Q,R=kp.utils.qr(v)
+    return Q,h,m
+
+def find_ritz_eigenvalues(h,v,threshold=1.e-2):
+    eig,u,resnorm,z=kp.utils.ritz(h,V=v,hermitian=True )
+    #orthonormalize eigenvectors
+    Q,R=kp.utils.qr(z)
+    selected=np.ma.masked_less(eig,threshold)
+    r=len(eig[selected.mask])
+    print "//"*30
+    print "Found   %d Ritz eigenvalues smaller than %.1g "%(r,threshold)
+    print eig[:r]
+    print "//"*30
+
+    return Q[:,:r],r

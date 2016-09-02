@@ -7,48 +7,71 @@ import pylab as pl
 from scipy.special import legendre
 
 
-def test_ground_filter():
-    pol=1
-    filelist=['data/20120718_093931.hdf5']
-    d,t,phi,pixs,hp_pixs,ground,subscan_nsample,tstart,samples_per_bolopair,bolos_per_ces=\
-                read_multiple_ces(filelist,pol, npairs=10,filtersubscan=True)
+def preprocess_ground(g):
+    nbins_ground=int(max(g))+1
 
-    nt,npix,nb=len(d),len(hp_pixs),len(t)
-
-    CESs= ProcessTimeSamples(pixs,npix,hp_pixs,pol=pol,phi=phi)
-    npix,hp_pixs=CESs.get_new_pixel
-    nbins_ground=int(max(ground))+1
-    flag=np.ma.masked_equal(pixs,-1)
-    ground[flag.mask]=-1
-    negs=np.ma.masked_less(ground,0)
-    m=np.logical_and(flag.mask, negs.mask )
-    ground[negs.mask]=-1
-    print len(ground[negs.mask])-len(ground[flag.mask]),"missed negative ground bins"
-    unflag=np.logical_not(negs.mask)
+    negs=np.ma.masked_less(g,0)
+    g[negs.mask]=-1
+#    print len(g[negs.mask])-len(g[flag.mask]),"missed negative ground bins"
+#    unflag=np.logical_not(negs.mask)
     groundbins=[]
-    for i in ground[unflag] :
-        counts[ground[i]]+=1.
+    counts=np.zeros(nbins_ground)
+
+
+    for i in g :
+        counts[i]+=1.
         if not groundbins.__contains__(i):
             groundbins.append(i)
         else : continue
+    return nbins_ground,counts,groundbins
 
+def test_ground_filter():
+    pol=1
+    #filelist=['data/20120718_093931.hdf5']
+    filelist=['/home/peppe/pb/mapmaker/data/20120718_050345.hdf5']
 
-    print groundbins
+    d,t,phi,pixs,hp_pixs,ground,subscan_nsample,tstart,samples_per_bolopair,bolos_per_ces=\
+                read_multiple_ces(filelist,pol, npairs=100,filtersubscan=True)
+
+    nt,npix,nb=len(d),len(hp_pixs),len(t)
+#    obsp=read_obspix_from_hdf5('/home/peppe/pb/mapmaker/data/obspix.hdf5')
+    #CESs= ProcessTimeSamples(pixs,npix,hp_pixs,pol=pol,phi=phi,obspix2=obsp)
+    CESs= ProcessTimeSamples(pixs,npix,hp_pixs,pol=pol,phi=phi,ground=ground )
+    npix,hp_pixs=CESs.get_new_pixel
+    #flag=np.ma.masked_equal(pixs,-1)
+    #ground[flag.mask]=-1
+    #nbins_ground,counts,groundbins=preprocess_ground(ground)
+
+    #print sum(counts)==nt
+    #print groundbins
 
     P=SparseLO(npix,nt,pixs)
+    Mbd=BlockDiagonalPreconditionerLO(CESs,npix,pol)
+    """
     G=SparseLO(nbins_ground,nt,ground)
-    counts=np.zeros(nbins_ground)
-    c=0
-    for i in negs.data:
-        if ground[i]==-1:
-            continue
 
+    print counts
     G.counts=counts
+
     invGtG=BlockDiagonalPreconditionerLO(G,nbins_ground)
     I= lp.IdentityOperator(nt)
-    F=I -G*invGtG*G.T
 
-    print F*d
+    F=I -G*invGtG*G.T
+    """
+    F=GroundFilterLO(ground)
+
+    v=np.ones(nt)
+    m2=Mbd*P.T *d
+    m=Mbd*P.T*F*d
+    hp_map=reorganize_map(m,hp_pixs,npix,1024,pol)
+    hp_map2=reorganize_map(m2,hp_pixs,npix,1024,pol)
+
+    compare_maps(hp_map2,hp_map,pol,'ra23',norm='None')
+    #plt.plot(d)
+    #show_matrix_form(invGtG)
+    #plt.plot(G*invGtG*G.T*d)
+    #plt.show()
+    #print F*d
 
 
 def test_polynomials():
@@ -82,7 +105,9 @@ def test_polynomials():
     pl.show()
 def test_poly_filtering():
     pol=1
-    filelist=['data/20120718_093931.hdf5']
+    filelist=['/home/peppe/pb/mapmaker/data/20120718_050345.hdf5']
+
+    #filelist=['data/20120718_093931.hdf5']
     d,t,phi,pixs,hp_pixs,ground,subscan_nsample,tstart,samples_per_bolopair,bolos_per_ces=\
                 read_multiple_ces(filelist,pol, npairs=None,filtersubscan=True)
 
@@ -91,13 +116,19 @@ def test_poly_filtering():
     CESs= ProcessTimeSamples(pixs,npix,hp_pixs,pol=pol,phi=phi)
     npix,hp_pixs=CESs.get_new_pixel
     print nt,npix,nb
-    pl.plot(d,label='before filtering ')
+    #pl.plot(d,label='before filtering ')
     P=SparseLO(npix,nt,pixs,angle_processed=CESs,pol=pol)
-
+    Mbd=BlockDiagonalPreconditionerLO(CESs,npix,pol)
+    mainm=Mbd*P.T *d
+    mapp=reorganize_map(mainm,hp_pixs,npix,1024,pol)
     F=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs,poly_order=0)
-    F1=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs,poly_order=3)
+
+    F1=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs,poly_order=1)
+    F2=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs,poly_order=2)
+
+    F3=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,bolos_per_ces,P.pairs,poly_order=3)
     s=time.clock()
-    fd1=F1*d
+    #fd1=F1*d
     e=time.clock()
     print "poly",e-s
     s=time.clock()
@@ -105,11 +136,25 @@ def test_poly_filtering():
     e=time.clock()
     print "mean",e-s
 
-    pl.plot(fd,label='after filtering ')
-    pl.plot(fd1,label='after filtering 1')
-    plt.legend(loc='best')#
+    v=np.ones(nt)
+    m1=reorganize_map(Mbd*P.T*F1*d, hp_pixs,npix,1024,pol )
+    compare_maps(mapp,m1,pol,'ra23',norm='None')
+    m=reorganize_map(Mbd*P.T*F*d, hp_pixs,npix,1024,pol )
+    mapp=reorganize_map(mainm,hp_pixs,npix,1024,pol)
 
-    pl.show()
-test_poly_filtering()
-#test_polynomials()
-#test_ground_filter()
+    compare_maps(mapp,m,pol,'ra23',norm='None')
+    m2=reorganize_map(Mbd*P.T*F2*d, hp_pixs,npix,1024,pol )
+    mapp=reorganize_map(mainm,hp_pixs,npix,1024,pol)
+
+    compare_maps(mapp,m2,pol,'ra23',norm='None')
+    m3=reorganize_map(Mbd*P.T*F3*d, hp_pixs,npix,1024,pol )
+    mapp=reorganize_map(mainm,hp_pixs,npix,1024,pol)
+
+    compare_maps(mapp,m2,pol,'ra23',norm='None')
+    #pl.plot(fd,label='after filtering ')
+    #pl.plot(fd1,label='after filtering 1')
+    #plt.legend(loc='best')#
+
+    #pl.show()
+#test_poly_filtering()
+test_ground_filter()
