@@ -161,7 +161,7 @@ def build_Z(z,y,w,eps):
 
     select_eigvec=[]
     for i in xrange(m):
-        if abs(z[i].real)<=eps:
+        if abs(z[i])<=eps:
             select_eigvec.append( y[i] )
     r=len(select_eigvec)
     if r==0 :
@@ -169,7 +169,9 @@ def build_Z(z,y,w,eps):
     print "++++++++++++++++++++++++++++++++++++"
     print "Found  eigenvectors below the threshold %.1g!\nThe deflation subspace  has dim(Z)=%d "%(eps,r)
     print "++++++++++++++++++++++++++++++++++++"
-    Z=dgemm(w,select_eigvec)
+    z=np.matrix(select_eigvec)
+
+    Z=dgemm(w.T,z)
     return Z,r
 
 
@@ -200,7 +202,7 @@ def run_krypy_arnoldi(A,x0,M, tol):
 def find_ritz_eigenvalues(h,v,threshold=1.e-2):
     eig,u,resnorm,z=kp.utils.ritz(h,V=v,hermitian=True )
     #orthonormalize eigenvectors
-    Q,R=kp.utils.qr(z)
+    #Q,R=kp.utils.qr(z)
     selected=np.ma.masked_less(eig,threshold)
     r=len(eig[selected.mask])
     print "//"*30
@@ -208,4 +210,4 @@ def find_ritz_eigenvalues(h,v,threshold=1.e-2):
     print eig[:r]
     print "//"*30
 
-    return Q[:,:r],r
+    return z[:,:r],r

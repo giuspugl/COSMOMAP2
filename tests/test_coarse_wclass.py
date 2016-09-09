@@ -62,7 +62,7 @@ class TestCoarseOperator_I():
 class TestCoarseOperator_QU():
     @classmethod
     def setup_class(self):
-        self.nt,self.npix,self.nb= 400,20,2
+        self.nt,self.npix,self.nb= 4000,20,2
         self.data=system_setup(self.nt,self.npix,self.nb)
     @classmethod
     def teardown_class(self):
@@ -82,7 +82,7 @@ class TestCoarseOperator_QU():
         B   =   BlockDiagonalLO(processd,self.npix,pol=pol)
 
         A   =   P.T*N*P
-        tol=1.e-5
+        tol=1.e-2
         eigv ,Z=spla.eigsh(A,M=B,Minv=Mbd,k=5,which='SM',ncv=15,tol=tol)
         r=Z.shape[1]
         Zd=DeflationLO(Z)

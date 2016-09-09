@@ -61,24 +61,28 @@ def test_arnoldi_krypy():
     pol=1
     #filelist=['data/20120718_093931.hdf5','data/20131011_092136.hdf5']
     filelist=['/home/peppe/pb/mapmaker/data/20120718_050345.hdf5']
+    obsp=read_obspix_from_hdf5('/home/peppe/pb/mapmaker/data/obspix.hdf5')
     #filelist=['data/20120718_093931.hdf5']
     d,t,phi,pixs,hp_pixs,ground,subscan_nsample,tstart,samples_per_bolopair,bolos_per_ces=\
-                read_multiple_ces(filelist,pol, npairs=10,filtersubscan=True)
+                read_multiple_ces(filelist,pol=pol, npairs=100,filtersubscan=True)
                 #read_from_data_with_subscan_resize('data/20120718_093931.hdf5',pol=pol)
 
     nt,npix,nb=len(d),len(hp_pixs),len(t)
     print nt,npix,nb
 
-    CESs= ProcessTimeSamples(pixs,npix,hp_pixs,pol=pol,phi=phi)
+    CESs= ProcessTimeSamples(pixs,npix,hp_pixs,pol=pol,phi=phi,ground=ground )
     npix,hp_pixs=CESs.get_new_pixel
 
     P=SparseLO(npix,nt,pixs,angle_processed=CESs,pol=pol)
     Mbd=BlockDiagonalPreconditionerLO(CESs,npix,pol)
 
     F=FilterLO(nt,[subscan_nsample,tstart],samples_per_bolopair,\
-                bolos_per_ces,pixs,poly_order=0)
+                bolos_per_ces,P.pairs,poly_order=0)
 
     b=P.T*F*d
+    hp_map=reorganize_map(b,hp_pixs,npix,nside,pol)
+    show_map(hp_map,pol,'ra23',norm=None)
+
     A=P.T*F*P
 
     pr=profile_run()
@@ -86,6 +90,7 @@ def test_arnoldi_krypy():
     x0=np.ones(pol*npix)
     tol=1.e-5
     V,H,m=run_krypy_arnoldi(A,x0,Mbd,tol)
+    print m
     Z,r  =find_ritz_eigenvalues(H,V)
 
     #write_ritz_eigenvectors_to_hdf5(Z,'data/ritz_eigenvectors_'+P.maptype+'_filter_20120718_093931.hdf5')
@@ -98,7 +103,8 @@ def test_arnoldi_krypy():
     AZd=DeflationLO(Az)
 
     # Build Coarse operator
-    E=CoarseLO(Z,Az,r)
+    E=CoarseLO(Z,Az,r,apply='eig')
+
     #Build the 2-level preconditioner
     I= lp.IdentityOperator(pol*npix)
     R=I - AZd*E*Zd.T
@@ -112,8 +118,8 @@ def test_arnoldi_krypy():
         n_iters=globals()['c']
         print "%d \t %r \t %r \t %d \t %g \t %g\t %g "%(i,np.allclose(M2*Az[:,i],Z[:,i]),norm2(R*Az[:,i])<=1.e-10,n_iters,norm2(Mbd*A*Z[:,i])/norm2(Z[:,i]),
                                                         norm2(Z[:,i]),scalprod(Z[:,i],Z[:,i-1]))
-        #hp_map=reorganize_map(Z[:,i],hp_pixs,npix,nside,pol)
-        #show_map(hp_map,pol,'ra23',norm=None)
+        hp_map=reorganize_map(Z[:,i],hp_pixs,npix,nside,pol)
+        show_map(hp_map,pol,'ra23',norm=None)
 
 
 

@@ -831,8 +831,9 @@ class CoarseLO(lp.LinearOperator):
 
         eigenvals,W=eigh(E)
         lambda_max=max(eigenvals)
+        print lambda_max/min(eigenvals)
         diags=eigenvals*0.
-        threshold_to_degen=1.e-5
+        threshold_to_degen=1.e-4
         nondegenerate=np.where(abs(eigenvals/lambda_max)>threshold_to_degen)[0]
         degenerate=np.where(abs(eigenvals/lambda_max)<threshold_to_degen)[0]
         c=bash_colors()
@@ -848,9 +849,13 @@ class CoarseLO(lp.LinearOperator):
 
         for i in nondegenerate:
                 diags[i]=1./eigenvals[i]
+
         D=np.diag(diags)
-        tmp=dgemm(D,W)
-        self.invE=dgemm(W.T,tmp)
+
+        tmp=dgemm(D.T,W)
+
+        self.invE=dgemm(W.T,tmp.T) #W.dot(D.dot(W.T))
+
 
     def __init__(self,Z,Az,r,apply='LU'):
         M=dgemm(Z,Az.T)

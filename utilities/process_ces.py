@@ -55,7 +55,10 @@ class ProcessTimeSamples(object):
         if obspix  is None:
             obspix =np.arange(self.nsamples)
         self.obspix=obspix
-
+        if ground is not None:
+            neg_groundbins=np.ma.masked_less(ground,0)
+            ground[neg_groundbins.mask]   =   -1
+            pixs[neg_groundbins.mask]     =   -1
         if obspix2 is None:
             self.threshold=threshold_cond
             self.initializeweights(phi,w)
@@ -67,12 +70,9 @@ class ProcessTimeSamples(object):
             self.compute_arrays(phi,w)
 
         if ground is not None:
-            negs=np.ma.masked_less(ground,0)
-            #print len(ground[negs.mask]),len(ground[flags.mask]),len(ground[np.logical_and(flags.mask,negs.mask)])
+            #flag the ground array as the pixs one is
             flags =np.ma.masked_equal(pixs,-1)
-            totalflags=np.logical_or(negs.mask,flags.mask)
-            ground[totalflags]   =   -1
-            pixs[totalflags]     =   -1
+            ground[flags.mask]   =   -1
             self.ground     = ground
 
     @property
