@@ -833,7 +833,7 @@ class CoarseLO(lp.LinearOperator):
         lambda_max=max(eigenvals)
         print lambda_max/min(eigenvals)
         diags=eigenvals*0.
-        threshold_to_degen=1.e-4
+        threshold_to_degen=1.e-6
         nondegenerate=np.where(abs(eigenvals/lambda_max)>threshold_to_degen)[0]
         degenerate=np.where(abs(eigenvals/lambda_max)<threshold_to_degen)[0]
         c=bash_colors()

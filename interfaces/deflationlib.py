@@ -181,7 +181,7 @@ def run_krypy_arnoldi(A,x0,M, tol):
     Aop=spla.aslinearoperator(A)
     prec=spla.aslinearoperator(M)
 
-    arnoldi = kp.utils.Arnoldi(Aop, x0,M=prec, maxiter=N, ortho='lanczos')
+    arnoldi = kp.utils.Arnoldi(Aop, x0,M=prec, maxiter=N, ortho='mgs')
     for m in xrange(N):
         arnoldi.advance()
         v,h,p=arnoldi.get()
@@ -196,8 +196,8 @@ def run_krypy_arnoldi(A,x0,M, tol):
         print "--"*30
 
     #orthonormalize the Arnoldi basis
-    Q,R=kp.utils.qr(v)
-    return Q,h,m
+    #Q,R=kp.utils.qr(p)
+    return v,h,m
 
 def find_ritz_eigenvalues(h,v,threshold=1.e-2):
     eig,u,resnorm,z=kp.utils.ritz(h,V=v,hermitian=True )
