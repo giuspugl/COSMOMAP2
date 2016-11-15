@@ -654,26 +654,35 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
         y=x*0.
 
         if self.pol==1:
-            y=x/self.counts
+            nan=np.ma.masked_greater(self.counts,0)
+            y[nan.mask]=x[nan.mask]/self.counts[nan.mask]
+
         elif self.pol==3:
             determ=self.counts*(self.cos2*self.sin2 - self.sincos*self.sincos)\
                 - self.cos*self.cos*self.sin2 - self.sin*self.sin*self.cos2\
                 +2.*self.cos*self.sin*self.sincos
+            nan=np.ma.masked_greater(abs(determ),1e-5)
+
             for pix,det,s2,c2,cs,c,s,hits in zip(self.pixels,determ,self.sin2,self.cos2,self.sincos,\
                                 self.cos,self.sin,self.counts):
+                if not  nan.mask[pix]: continue
+
                 y[3*pix]  =((c2*s2-cs*cs)*x[3*pix]+ (s*cs-c*s2)  *x[3*pix+1]  +( c*cs-s*c2)  *x[3*pix+2])/det
                 y[3*pix+1]=((s*cs-c*s2)  *x[3*pix]+ (hits*s2-s*s)*x[3*pix+1]  +( s*c-hits*cs)*x[3*pix+2])/det
                 y[3*pix+2]=((c*cs -s*c2) *x[3*pix]+(-hits*cs+c*s)*x[3*pix+1]  +(hits*c2-c*c) *x[3*pix+2])/det
 
         elif self.pol==2:
+
             determ=(self.cos2*self.sin2)-(self.sincos*self.sincos)
+            nan=np.ma.masked_greater(abs(determ),1e-5)
+
             for pix,s2,c2,cs,det in zip( self.pixels,self.sin2,self.cos2,self.sincos,determ):
-                det=(c2*s2)-(cs*cs)
                 tr=c2+s2
                 sqrt=np.sqrt(tr*tr/4. -det)
                 lambda_max=tr/2. + sqrt
                 lambda_min=tr/2. - sqrt
                 cond_num=np.abs(lambda_max/lambda_min)
+                if not nan.mask[pix]:  continue
                 y[pix*2]  =  ( s2  *x[2*pix] - cs *x[pix*2+1])/det
                 y[pix*2+1]=  (-cs  *x[2*pix] + c2 *x[pix*2+1])/det
         return y
@@ -831,7 +840,6 @@ class CoarseLO(lp.LinearOperator):
 
         eigenvals,W=eigh(E)
         lambda_max=max(eigenvals)
-        print lambda_max/min(eigenvals)
         diags=eigenvals*0.
         threshold_to_degen=1.e-6
         nondegenerate=np.where(abs(eigenvals/lambda_max)>threshold_to_degen)[0]

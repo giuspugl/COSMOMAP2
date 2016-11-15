@@ -92,14 +92,14 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname=None):
 
     return hp_list
 
-def show_map(outm,pol,patch,figname=None,norm='hist'):
+def show_map(outm,pol,patch,figname=None,norm=None):
     """
     Output the map `outm` to screen or to a file.
 
     **Parameters**
 
     - ``outm`` :
-        map in the `.fits` format;
+        map in the fullsky format;
     - ``pol`` : {int}
     -  ``patch``: {str}
         Key to a dictionary to get the equatorial coordinates given a name patch (Polarbear collaboration
@@ -157,7 +157,7 @@ def subtract_offset(mapp,obspix, pol):
 
     return mapp
 
-def compare_maps(outm,inm,pol,patch,figname=None,remove_offset=True,norm='hist'):
+def compare_maps(outm,inm,pol,patch,figname=None,remove_offset=True,norm=None):
     """
     Output on device or in file the input map,  the output one processed from datastream
     and their difference.

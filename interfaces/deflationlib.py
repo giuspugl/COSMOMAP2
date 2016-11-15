@@ -175,8 +175,12 @@ def build_Z(z,y,w,eps):
     return Z,r
 
 
-def run_krypy_arnoldi(A,x0,M, tol):
-    N=len(x0)
+def run_krypy_arnoldi(A,x0,M, tol, maxiter=None):
+    if maxiter is None:
+        N=len(x0)
+    else:
+        N=maxiter
+        
     x0=x0.reshape((N,1))
     Aop=spla.aslinearoperator(A)
     prec=spla.aslinearoperator(M)
