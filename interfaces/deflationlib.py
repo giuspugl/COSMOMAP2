@@ -176,28 +176,30 @@ def build_Z(z,y,w,eps):
 
 
 def run_krypy_arnoldi(A,x0,M, tol, maxiter=None):
+    N=len(x0)
     if maxiter is None:
-        N=len(x0)
+        nmax=N
     else:
-        N=maxiter
-        
+        nmax=maxiter
     x0=x0.reshape((N,1))
     Aop=spla.aslinearoperator(A)
     prec=spla.aslinearoperator(M)
 
-    arnoldi = kp.utils.Arnoldi(Aop, x0,M=prec, maxiter=N, ortho='mgs')
-    for m in xrange(N):
+    arnoldi = kp.utils.Arnoldi(Aop, x0,M=prec, maxiter=nmax, ortho='mgs')
+    for m in xrange(nmax):
+
         arnoldi.advance()
         v,h,p=arnoldi.get()
         resid = abs(h[m+1,m]*v[m,m+1])
         if resid<=tol:
             break
-    if m+1==N:
-        print "Convergence not achieved within the Arnoldi algorithm after %d iterations"%(m)
+    if m+1==nmax:
+        print "Convergence not achieved within the Arnoldi algorithm after %d iterations, r^(k)= %g"%(m,resid )
     else:
         print "--"*30
         print "%g accuracy reached with %d Arnoldi iterations"%(tol,m)
         print "--"*30
+
 
     #orthonormalize the Arnoldi basis
     #Q,R=kp.utils.qr(p)

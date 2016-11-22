@@ -115,26 +115,26 @@ def show_map(outm,pol,patch,figname=None,norm=None):
     if pol==1:
         unseen=np.where(outm ==0)[0]
         outm[unseen]=hp.UNSEEN
-        hp.gnomview(outm,rot=coords,xsize=328,title='I map',norm=norm)
+        hp.gnomview(outm,rot=coords,xsize=328,title='I map',norm=norm,unit=r'$\mathrm{\mu K}$')
         #hp.graticule(dpar=5,dmer=5,local=True)
     elif pol==2:
         unseen=np.where(outm[0]==0)[0]
         outm[0][unseen]=hp.UNSEEN
-        hp.gnomview(outm[0],rot=coords,xsize=328,title='Q map',sub=121,norm=norm)
+        hp.gnomview(outm[0],rot=coords,xsize=328,title='Q map',sub=121,norm=norm,unit=r'$\mathrm{\mu K}$')
         #hp.graticule(dpar=5,dmer=5,local=True)
         outm[1][unseen]=hp.UNSEEN
-        hp.gnomview(outm[1],rot=coords,xsize=328,title='U map',sub=122,norm=norm)
+        hp.gnomview(outm[1],rot=coords,xsize=328,title='U map',sub=122,norm=norm,unit=r'$\mathrm{\mu K}$')
         #hp.graticule(dpar=5,dmer=5,local=True)
     elif pol==3:
         unseen=np.where(outm[1]==0)[0]
         outm[0][unseen]=hp.UNSEEN
-        hp.gnomview(outm[0],rot=coords,xsize=328,title='I map',sub=131,norm=norm)
+        hp.gnomview(outm[0],rot=coords,xsize=328,title='I map',sub=131,norm=norm,unit=r'$\mathrm{\mu K}$')
         #hp.graticule(dpar=5,dmer=5,local=True)
         outm[1][unseen]=hp.UNSEEN
-        hp.gnomview(outm[1],rot=coords,xsize=328,title='Q map',sub=132,norm=norm)
+        hp.gnomview(outm[1],rot=coords,xsize=328,title='Q map',sub=132,norm=norm,unit=r'$\mathrm{\mu K}$')
         #hp.graticule(dpar=5,dmer=5,local=True)
         outm[2][unseen]=hp.UNSEEN
-        hp.gnomview(outm[2],rot=coords,xsize=328,title='U map',sub=133,norm=norm)
+        hp.gnomview(outm[2],rot=coords,xsize=328,title='U map',sub=133,norm=norm,unit=r'$\mathrm{\mu K}$')
         #hp.graticule(dpar=5,dmer=5,local=True)
 
     if figname is None:
@@ -201,13 +201,13 @@ def compare_maps(outm,inm,pol,patch,figname=None,remove_offset=True,norm=None):
         minval=min(inm[observ])
         inm[unseen]=hp.UNSEEN
         outm[unseen]=hp.UNSEEN
-        hp.gnomview(inm,rot=coords,xsize=328,min=minval,max=maxval,title='I input map',sub=131)
+        hp.gnomview(inm,rot=coords,xsize=328,min=minval,max=maxval,title='I input map',sub=131,unit=r'$\mathrm{\mu K}$')
         #hp.graticule(dpar=5,dmer=5,local=True)
-        hp.gnomview(outm,rot=coords,xsize=328,min=minval,max=maxval,title='I output',sub=132)
+        hp.gnomview(outm,rot=coords,xsize=328,min=minval,max=maxval,title='I output',sub=132,unit=r'$\mathrm{\mu K}$')
         #hp.graticule(dpar=5,dmer=5,local=True)
         diff=inm-outm
         diff[unseen]=hp.UNSEEN
-        hp.gnomview(diff,rot=coords,xsize=328,title='I diff',sub=133,norm=norm)
+        hp.gnomview(diff,rot=coords,xsize=328,title='I diff',sub=133,norm=norm,unit=r'$\mathrm{\mu K}$')
         #hp.graticule(dpar=5,dmer=5,local=True)
 
     elif pol==3:
@@ -219,15 +219,15 @@ def compare_maps(outm,inm,pol,patch,figname=None,remove_offset=True,norm=None):
             minval=min(inm[i][observ])
             inm[i][unseen]=hp.UNSEEN
             outm[i][unseen]=hp.UNSEEN
-            hp.gnomview(inm[i],rot=coords,xsize=328,min=minval,max=maxval,title=strnmap[i]+' input map',sub=figcount)
+            hp.gnomview(inm[i],rot=coords,xsize=328,min=minval,max=maxval,title=strnmap[i]+' input map',sub=figcount,unit=r'$\mathrm{\mu K}$')
             #hp.graticule(dpar=5,dmer=5,local=True)
             figcount+=1
-            hp.gnomview(outm[i],rot=coords,xsize=328,min=minval,max=maxval,title=strnmap[i]+' output map',sub=figcount)
+            hp.gnomview(outm[i],rot=coords,xsize=328,min=minval,max=maxval,title=strnmap[i]+' output map',sub=figcount,unit=r'$\mathrm{\mu K}$')
             #hp.graticule(dpar=5,dmer=5,local=True)
             figcount+=1
             diff=inm[i]-outm[i]
             diff[unseen]=hp.UNSEEN
-            hp.gnomview((diff),rot=coords,xsize=328,title=strnmap[i]+' diff',sub=figcount,norm=norm)
+            hp.gnomview((diff),rot=coords,xsize=328,title=strnmap[i]+' diff',sub=figcount,norm=norm,unit=r'$\mathrm{\mu K}$')
             #hp.graticule(dpar=5,dmer=5,local=True)
             figcount+=1
 
@@ -239,15 +239,15 @@ def compare_maps(outm,inm,pol,patch,figname=None,remove_offset=True,norm=None):
             minval=min(inm[i][observ])
             inm[i][unseen]=hp.UNSEEN
             outm[i][unseen]=hp.UNSEEN
-            hp.gnomview(inm[i],rot=coords,xsize=328,min=minval,max=maxval,title=strnmap[i]+' input map',sub=figcount)
+            hp.gnomview(inm[i],rot=coords,xsize=328,min=minval,max=maxval,title=strnmap[i]+' input map',sub=figcount,unit=r'$\mathrm{\mu K}$')
             #hp.graticule(dpar=5,dmer=5,local=True)
             figcount+=1
-            hp.gnomview(outm[i],rot=coords,xsize=328,min=minval,max=maxval,title=strnmap[i]+' output map',sub=figcount)
+            hp.gnomview(outm[i],rot=coords,xsize=328,min=minval,max=maxval,title=strnmap[i]+' output map',sub=figcount,unit=r'$\mathrm{\mu K}$')
             #hp.graticule(dpar=5,dmer=5,local=True)
             figcount+=1
             diff=inm[i]-outm[i]
             diff[unseen]=hp.UNSEEN
-            hp.gnomview((diff),rot=coords,xsize=328,title=strnmap[i]+' diff',sub=figcount,norm=norm)
+            hp.gnomview((diff),rot=coords,xsize=328,title=strnmap[i]+' diff',sub=figcount,norm=norm,unit=r'$\mathrm{\mu K}$')
             #hp.graticule(dpar=5,dmer=5,local=True)
             figcount+=1
 
