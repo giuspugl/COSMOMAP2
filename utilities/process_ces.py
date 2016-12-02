@@ -1,3 +1,14 @@
+#
+#   PROCESS_CES.PY
+#   class to preprocess and flag bad data 
+#   date: 2016-12-02
+#   author: GIUSEPPE PUGLISI
+#
+#   Copyright (C) 2016   Giuseppe Puglisi    giuspugl@sissa.it
+#
+
+
+
 import numpy as np
 from scipy import weave
 from scipy.weave import inline

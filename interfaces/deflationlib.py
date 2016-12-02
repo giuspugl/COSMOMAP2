@@ -1,3 +1,12 @@
+#
+#   DEFLATIONLIB.PY
+#   is a package of functions interfacing krypy routines for KRYLOV  subspaces
+#   date: 2016-12-02
+#   author: GIUSEPPE PUGLISI
+#
+#   Copyright (C) 2016   Giuseppe Puglisi    giuspugl@sissa.it
+#
+
 from scipy.linalg import get_blas_funcs
 import scipy.sparse.linalg as spla
 import krypy as kp

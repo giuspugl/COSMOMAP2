@@ -1,3 +1,13 @@
+#
+#   IOFILES.PY
+#   input output routines for hdf5 data
+#   date: 2016-12-02
+#   author: GIUSEPPE PUGLISI
+#
+#   Copyright (C) 2016   Giuseppe Puglisi    giuspugl@sissa.it
+#
+
+
 import numpy as np
 import h5py as h5
 from  utilities_functions import *

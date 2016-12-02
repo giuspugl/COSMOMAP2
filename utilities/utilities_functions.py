@@ -1,3 +1,13 @@
+#
+#   UTILITIES_FUNCTIONS.PY
+#   miscellaneous  functions 
+#   date: 2016-12-02
+#   author: GIUSEPPE PUGLISI
+#
+#   Copyright (C) 2016   Giuseppe Puglisi    giuspugl@sissa.it
+#
+
+
 import random as rd
 import numpy as np
 from scipy.linalg import get_blas_funcs

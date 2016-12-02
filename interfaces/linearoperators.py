@@ -1,3 +1,14 @@
+#
+#   LINEAROPERATORS.PY
+#   collects several LinearOperator classes inheritating attributes from linop package
+#   date: 2016-12-02
+#   author: GIUSEPPE PUGLISI
+#
+#   Copyright (C) 2016   Giuseppe Puglisi    giuspugl@sissa.it
+#
+
+
+
 import math as m
 import numpy as np
 import linop.linop as lp

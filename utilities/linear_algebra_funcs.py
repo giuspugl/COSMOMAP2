@@ -1,3 +1,14 @@
+#
+#   LINEAR_ALGEBRA_FUNCS.PY
+#   interface function to blas routines 
+#   date: 2016-12-02
+#   author: GIUSEPPE PUGLISI
+#
+#   Copyright (C) 2016   Giuseppe Puglisi    giuspugl@sissa.it
+#
+
+
+
 from scipy.linalg import get_blas_funcs
 from scipy.special import legendre
 import numpy as np
