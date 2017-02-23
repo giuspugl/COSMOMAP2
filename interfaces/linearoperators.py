@@ -497,7 +497,7 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
     **Parameters**
 
     - ``blocksize`` : {int or list }
-        size of each diagonal block, it is : :math:`blocksize= n/nblocks`.
+        size of each diagonal block, if `int` it is : :math:`blocksize= n/nblocks`.
     - ``t`` : {array}
         noise values for each block
     - ``offdiag`` : {bool, default ``False``}

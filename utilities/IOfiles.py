@@ -244,6 +244,7 @@ def read_ritz_eigenvectors_from_hdf5(filename):
     z=eigens[...]
     f.close()
     return z,n_eigenvals
+
 def read_obspix_from_hdf5(filename):
     """
     read from hdf5 file the obspix array containing
@@ -254,6 +255,14 @@ def read_obspix_from_hdf5(filename):
     obsp=f["obspix"][...]
     f.close()
     return obsp
+def write_obspix_to_hdf5(filename,obspix):
+    """
+    Save into hdf5 file the obspix array
+    """
+    f=h5.File(filename,"w")
+    det=f.create_dataset("obspix",data=obspix,dtype=h5.h5t.STD_I32BE )
+    f.close()
+    pass
 
 def write_to_hdf5(filename,obs_pixels,noise_values,d,phi=None):
     """
