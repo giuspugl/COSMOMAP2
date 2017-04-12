@@ -18,7 +18,9 @@ from scipy import weave
 from scipy.weave import inline
 import scipy.sparse.linalg as spla
 from utilities import *
-
+from multiprocessing import Pool
+from copy_reg import pickle
+from types import MethodType
 
 
 class GroundFilterLO(lp.LinearOperator):
@@ -58,9 +60,23 @@ class GroundFilterLO(lp.LinearOperator):
 
         self.Pg = (G *invGtG *G.T)
         super(GroundFilterLO, self).__init__(nargin=self.n,nargout=self.n, matvec=self.mult,
-                                                symmetric=False )
+                                                symmetric=True )
 
+def _pickle_method(method):
+    func_name = method.im_func.__name__
+    obj = method.im_self
+    cls = method.im_class
+    return _unpickle_method, (func_name, obj, cls)
 
+def _unpickle_method(func_name, obj, cls):
+    for cls in cls.mro():
+        try:
+            func = cls.__dict__[func_name]
+        except KeyError:
+            pass
+        else:
+            break
+    return func.__get__(obj, cls)
 
 class FilterLO(lp.LinearOperator):
     """
@@ -183,6 +199,53 @@ class FilterLO(lp.LinearOperator):
                 else : continue
         self.legendres={size: get_legendre_polynomials(self.poly_order,size) for size in subscan_sizes}
 
+    def procsfilter(self ,args):
+		d,subsc, ts,ns,nb,mask= args
+		vec_out=d*0.
+		for bolo_iter in xrange(nb):
+			for i,j in zip(subsc,ts):
+				start=j +ns*bolo_iter
+				end = start +i
+				tmpmask=mask[start:end]
+				size= len(np.where(tmpmask==True)[0])
+				if size <= self.poly_order:
+					continue
+				legendres= self.legendres[i]
+				if 	 size != i :
+					q,r   =   np.linalg.qr(legendres[tmpmask])
+					legendres=q
+
+					p=np.zeros(size)
+					for k in range(self.poly_order+1):
+
+						filterbasis=legendres[:,k]
+						p+=scalprod(filterbasis,d[start:end][tmpmask])*filterbasis
+						vec_out[start:end][tmpmask]= d[start:end][tmpmask] - p
+				else :
+					p=np.zeros(size)
+					for k in range(self.poly_order+1):
+						filterbasis=legendres[:,k]
+						p+=scalprod(filterbasis,d[start:end])*filterbasis
+						vec_out[start:end]= d[start:end] - p
+
+		return vec_out
+
+
+    def polyfilter_multithreads(self,d):
+		vec_out=d*0.
+		pixs=self.pixels
+		func=lambda ns,nb: ns*nb
+		offsend=map(func,self.nsamples,self.nbolos)
+		offstart=offsend[:-1]
+		offstart.insert(0,0)
+		offsend =np.cumsum(offsend)
+		offstart=np.cumsum(offstart)
+		dces=[d[i:j] for i,j in zip(offstart,offsend)]
+		mask=np.ma.masked_greater_equal(pixs,0).mask
+		maskces=[mask[i:j] for i,j in zip(offstart,offsend)]
+		procs=Pool(len(dces))
+		vec=  procs.map(self.procsfilter, zip(dces, self.subscans,self.tstart, self.nsamples,self.nbolos,maskces))
+		return np.concatenate(vec)
 
 
 
@@ -204,8 +267,8 @@ class FilterLO(lp.LinearOperator):
                                                     symmetric=False )
         elif poly_order>0:
             self.compute_legendres()
-
-            super(FilterLO, self).__init__(nargin=size,nargout=size, matvec=self.polyfilter,
+            pickle(MethodType, _pickle_method, _unpickle_method)
+            super(FilterLO, self).__init__(nargin=size,nargout=size, matvec=self.polyfilter_multithreads,
                                                     symmetric=False )
 
 class SparseLO(lp.LinearOperator):
@@ -252,6 +315,7 @@ class SparseLO(lp.LinearOperator):
         pixs=self.pairs
         code = r"""
 	    int i;
+
         for (i=0;i<Nrows;++i){
             if (pixs(i) == -1) continue;
             x(i)+= v(pixs(i));
@@ -276,7 +340,7 @@ class SparseLO(lp.LinearOperator):
         pixs=self.pairs
 
         code = r"""
-	      int i ;
+           int i ;
            for ( i=0;i<Nrows;++i){
             if (pixs(i) == -1) continue;
 

@@ -1,6 +1,6 @@
 #
 #   UTILITIES_FUNCTIONS.PY
-#   miscellaneous  functions 
+#   miscellaneous  functions
 #   date: 2016-12-02
 #   author: GIUSEPPE PUGLISI
 #
