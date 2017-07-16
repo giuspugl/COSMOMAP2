@@ -11,6 +11,7 @@
 import numpy as np
 import h5py as h5
 from  utilities_functions import *
+from memory_profiler import profile
 
 
 def read_from_data(filename,pol,npairs=None):
@@ -68,7 +69,6 @@ def read_from_data(filename,pol,npairs=None):
     ground=np.concatenate(ground_pair)
 
     return d,weight,polang,pixs,hp_pixs,ground,n_ces
-
 def read_multiple_ces(filelist,pol, npairs=None,filtersubscan=True):
     """
     Read a list of  hdf5 files of multiple CES scans preprocessed by the AnalysisBackend
@@ -175,7 +175,7 @@ def read_from_data_with_subscan_resize(filename,pol,npairs=None):
     n_bolo_pair=f['n_bolo_pair'][...]
     n_ces=f['n_sample_ces'][...]
     subscan=[f['subscans/n_sample'][...],f['subscans/t_start'][...]]
-    print "Bolo Pairs in this CES : %d \t #samples per Bolo Pairs: %d "%(n_bolo_pair,n_ces)
+    #print "Bolo Pairs in this CES : %d \t #samples per Bolo Pairs: %d "%(n_bolo_pair,n_ces)
     pixs_pair=[]
     polang_pair=[]
     d_pair=[]
@@ -211,7 +211,7 @@ def read_from_data_with_subscan_resize(filename,pol,npairs=None):
 
 
 
-def write_ritz_eigenvectors_to_hdf5(z,filename):
+def write_ritz_eigenvectors_to_hdf5(z,filename,eigvals=None):
     """
     Save to a file the approximated eigenvectors computed via the :func:`deflationlib.arnoldi`
     routine.
@@ -229,10 +229,15 @@ def write_ritz_eigenvectors_to_hdf5(z,filename):
                                     dtype=h5.h5t.STD_I32BE,data=n_eigenvals)
 
     eig=eigenvect_group.create_dataset("Eigenvectors",data=z,chunks=True)
+
+    if not (eigvals is None):
+	eig=f.create_dataset("Ritz_eigenvalues",data=eigvals)
+
+
     f.close()
     pass
 
-def read_ritz_eigenvectors_from_hdf5(filename):
+def read_ritz_eigenvectors_from_hdf5(filename,eigvals=False):
     """
     read from hdf5 file the approximated eigenvectors
     related to the deflation subspace.
@@ -242,8 +247,13 @@ def read_ritz_eigenvectors_from_hdf5(filename):
     n_eigenvals=f["Ritz_eigenvectors/n_eigenvectors"][...]
     eigens=f["Ritz_eigenvectors/Eigenvectors"]
     z=eigens[...]
-    f.close()
-    return z,n_eigenvals
+    if eigvals:
+	eigenvals=f["Ritz_eigenvalues"][...]
+	f.close()
+	return z,n_eigenvals,eigenvals
+    else:
+	f.close()
+	return z,n_eigenvals
 
 def read_obspix_from_hdf5(filename):
     """

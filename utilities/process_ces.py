@@ -14,6 +14,7 @@ from scipy import weave
 from scipy.weave import inline
 from  utilities_functions import *
 
+from memory_profiler import profile
 
 
 class ProcessTimeSamples(object):
@@ -85,7 +86,6 @@ class ProcessTimeSamples(object):
             flags =np.ma.masked_equal(pixs,-1)
             ground[flags.mask]   =   -1
             self.ground     = ground
-
     @property
     def get_new_pixel(self):
         return self.__new_npix,self.obspix
@@ -108,7 +108,6 @@ class ProcessTimeSamples(object):
         self.obspix=new_obspix
         self.__new_npix=len(new_obspix)
         print self.bashc.bold("NT=%d\tNPIX=%d"%(self.nsamples,self.__new_npix))
-
     def compute_arrays(self,phi,w):
         npix=self.__new_npix
         N=self.nsamples

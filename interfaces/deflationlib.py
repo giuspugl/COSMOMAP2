@@ -214,7 +214,7 @@ def run_krypy_arnoldi(A,x0,M, tol, maxiter=None):
     #Q,R=kp.utils.qr(p)
     return v,h,m
 
-def find_ritz_eigenvalues(h,v,threshold=1.e-2):
+def find_ritz_eigenvalues(h,v,threshold=1.e-2,eigenvalues=False):
     eig,u,resnorm,z=kp.utils.ritz(h,V=v,hermitian=True )
     #orthonormalize eigenvectors
     #Q,R=kp.utils.qr(z)
@@ -224,5 +224,9 @@ def find_ritz_eigenvalues(h,v,threshold=1.e-2):
     print "Found   %d Ritz eigenvalues smaller than %.1g "%(r,threshold)
     print eig[:r]
     print "//"*30
+    if eigenvalues:
+	return z[:,selected.mask],r,eig[selected.mask]
+    else:
+	return z[:,:r],r
 
-    return z[:,:r],r
+
