@@ -353,23 +353,23 @@ def save_maplist(maplist,filename):
     Save a list of maps into a hdf5 file.
     useful when one needs to store the solutions at each iteration steps
     """
-        f=h5.File(filename,"w")
-        nmaps=len(maplist)
-        f.create_dataset('Nmaps',np.shape(nmaps), dtype=h5.h5t.STD_I32BE,data=nmaps)
-        for i in xrange(nmaps):
-            f.create_dataset('Map'+str(i),np.shape(maplist[i]), dtype=h5.h5t.IEEE_F64BE,data=maplist[i])
+    f=h5.File(filename,"w")
+    nmaps=len(maplist)
+    f.create_dataset('Nmaps',np.shape(nmaps), dtype=h5.h5t.STD_I32BE,data=nmaps)
+    for i in xrange(nmaps):
+        f.create_dataset('Map'+str(i),np.shape(maplist[i]), dtype=h5.h5t.IEEE_F64BE,data=maplist[i])
 
-        f.close()
-        pass
+    f.close()
+    pass
 
 def read_maplist(filename):
     """
     Read a list of N maps from an hdf5 file.
     """
-        f=h5.File(filename,"r")
-        nmaps=f["Nmaps"][...]
-        m=[]
-        for i in xrange(nmaps):
-                m.append( np.array(f['Map'+str(i)][...]).T)
+    f=h5.File(filename,"r")
+    nmaps=f["Nmaps"][...]
+    m=[]
+    for i in xrange(nmaps):
+        m.append( np.array(f['Map'+str(i)][...]).T)
 
-        return m,nmaps
+    return m,nmaps
