@@ -104,7 +104,7 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname=None):
 
     return hp_list
 
-def show_map(outm,pol,patch,figname=None,norm=None):
+def show_map(outm,pol,patch,figname=None, **kwargs):
     """
     Output the map `outm` to screen or to a file.
 
@@ -120,33 +120,41 @@ def show_map(outm,pol,patch,figname=None,norm=None):
         If unset, outputs on screen;
     - ``norm`` : {str}
         key to the normalization of the color scale, ( `None`, `hist`, `log`)
-
+    - ``kwargs`` : {dict}
+        gnomview arguments 
     """
     coord_dict={'ra23':[-14.7,-33.09],'LP':[2.5,-53.5]}
-    coords=coord_dict[patch]
+
+    if not hasattr(kwargs, 'rot'):
+        coords=coord_dict[patch]
+    else:
+        coords=kwargs['rot']
+
+
+
     if pol==1:
         unseen=np.where(outm ==0)[0]
         outm[unseen]=hp.UNSEEN
-        hp.gnomview(outm,rot=coords,xsize=328,title='I map',norm=norm,unit=r'$\mathrm{\mu K}$')
+        hp.gnomview(outm,rot=coords,title='I map',**kwargs)
         #hp.graticule(dpar=5,dmer=5,local=True)
     elif pol==2:
         unseen=np.where(outm[0]==0)[0]
         outm[0][unseen]=hp.UNSEEN
-        hp.gnomview(outm[0],rot=coords,xsize=328,title='Q map',sub=121,norm=norm,unit=r'$\mathrm{\mu K}$')
+        hp.gnomview(outm[0],rot=coords,sub=121,title='Q map',**kwargs)
         #hp.graticule(dpar=5,dmer=5,local=True)
         outm[1][unseen]=hp.UNSEEN
-        hp.gnomview(outm[1],rot=coords,xsize=328,title='U map',sub=122,norm=norm,unit=r'$\mathrm{\mu K}$')
+        hp.gnomview(outm[1],rot=coords,sub=122,title='U map',**kwargs)
         #hp.graticule(dpar=5,dmer=5,local=True)
     elif pol==3:
         unseen=np.where(outm[1]==0)[0]
         outm[0][unseen]=hp.UNSEEN
-        hp.gnomview(outm[0],rot=coords,xsize=328,title='I map',sub=131,norm=norm,unit=r'$\mathrm{\mu K}$')
+        hp.gnomview(outm[0],rot=coords,title='I map',sub=131,**kwargs)
         #hp.graticule(dpar=5,dmer=5,local=True)
         outm[1][unseen]=hp.UNSEEN
-        hp.gnomview(outm[1],rot=coords,xsize=328,title='Q map',sub=132,norm=norm,unit=r'$\mathrm{\mu K}$')
+        hp.gnomview(outm[1],rot=coords,title='Q map',sub=132,**kwargs)
         #hp.graticule(dpar=5,dmer=5,local=True)
         outm[2][unseen]=hp.UNSEEN
-        hp.gnomview(outm[2],rot=coords,xsize=328,title='U map',sub=133,norm=norm,unit=r'$\mathrm{\mu K}$')
+        hp.gnomview(outm[2],rot=coords,title='U map',sub=133,**kwargs)
         #hp.graticule(dpar=5,dmer=5,local=True)
 
     if figname is None:

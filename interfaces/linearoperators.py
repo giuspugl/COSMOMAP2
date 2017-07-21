@@ -19,7 +19,7 @@ from scipy.weave import inline
 import scipy.sparse.linalg as spla
 from utilities import *
 from multiprocessing import Pool,Queue,Process
-import time 
+import time
 import multiprocessing
 class GroundFilterLO(lp.LinearOperator):
 
@@ -211,7 +211,7 @@ class FilterLO(lp.LinearOperator):
                     subscan_sizes.append(i)
                 else : continue
         self.legendres={size: get_legendre_polynomials(self.poly_order,size) for size in subscan_sizes}
-    
+
     def procsfilter(self ,args):
 		d,subsc, ts,ns,nb,mask= args
 		vec_out=d*0.
@@ -255,21 +255,17 @@ class FilterLO(lp.LinearOperator):
 		dces=[d[i:j] for i,j in zip(offstart,offsend)]
 		mask=np.ma.masked_greater_equal(pixs,0).mask
 		maskces=[mask[i:j] for i,j in zip(offstart,offsend)]
-		
 		polyorder=[self.poly_order]*len(dces)
 		leg=[self.legendres]*len(dces)
 		vec= self.procs.map(globalprocsfilter, zip(dces, self.subscans,self.tstart, self.nsamples,self.nbolos,maskces,polyorder,leg))
 		return np.concatenate(vec)
 
-
-
-    def __init__(self,size,subscan_nsample,samples_per_bolopair,bolos_per_ces, pix_samples,poly_order=0):
+    def __init__(self,size,subscan_nsample,samples_per_bolopair,bolos_per_ces, pix_samples,poly_order=0,npool=4):
         self.n=size
         self.nsamples=samples_per_bolopair
         self.nbolos=bolos_per_ces
         self.subscans=subscan_nsample[0]
         self.tstart=subscan_nsample[1]
-       	self.procs=Pool(4 )
 	if not (type(self.nsamples) is list):
             self.nsamples=[self.nsamples]
             self.nbolos=[self.nbolos]
@@ -281,6 +277,7 @@ class FilterLO(lp.LinearOperator):
             super(FilterLO, self).__init__(nargin=size,nargout=size, matvec=self.mult,
                                                     symmetric=False )
         elif poly_order>0:
+            self.procs=Pool(npool )
             self.compute_legendres()
             super(FilterLO, self).__init__(nargin=size,nargout=size, matvec=self.polyfilter_multithreads, symmetric = False)
 
@@ -294,7 +291,7 @@ def globalprocsfilter(args):
 #			if not subscan_sizes.__contains__(s):
 #				subscan_sizes.append(s)
 #			else : continue
-		
+
 #		legendredict={size: get_legendre_polynomials(poly_order,size) for size in subscan_sizes}
                 vec_out=d*0.
                 for bolo_iter in xrange(nb):
@@ -305,7 +302,7 @@ def globalprocsfilter(args):
                                 size= len(np.where(tmpmask==True)[0])
                                 if size <= poly_order:
                                         continue
-                                legendres=legendredict[i] 
+                                legendres=legendredict[i]
                                 if       size != i :
                                         q,r   =   np.linalg.qr(legendres[tmpmask])
                                         legendres=q
@@ -983,7 +980,7 @@ class CoarseLO(lp.LinearOperator):
             print c.header("==="*30)
             print c.header("\t Matrix E is not singular, all its eigenvalues have been taken into account\t")
             print c.header("==="*30)
-	
+
         #for i in nondegenerate:
         #        diags[i]=1./eigenvals[i]
 	diags=1./eigenvals

@@ -1,6 +1,6 @@
 #
 #   PROCESS_CES.PY
-#   class to preprocess and flag bad data 
+#   class to preprocess and flag bad data
 #   date: 2016-12-02
 #   author: GIUSEPPE PUGLISI
 #
@@ -14,7 +14,6 @@ from scipy import weave
 from scipy.weave import inline
 from  utilities_functions import *
 
-from memory_profiler import profile
 
 
 class ProcessTimeSamples(object):
@@ -108,6 +107,7 @@ class ProcessTimeSamples(object):
         self.obspix=new_obspix
         self.__new_npix=len(new_obspix)
         print self.bashc.bold("NT=%d\tNPIX=%d"%(self.nsamples,self.__new_npix))
+
     def compute_arrays(self,phi,w):
         npix=self.__new_npix
         N=self.nsamples
