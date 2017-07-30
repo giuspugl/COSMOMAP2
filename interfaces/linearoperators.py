@@ -981,11 +981,9 @@ class CoarseLO(lp.LinearOperator):
             print c.header("\t Matrix E is not singular, all its eigenvalues have been taken into account\t")
             print c.header("==="*30)
 
-        #for i in nondegenerate:
-        #        diags[i]=1./eigenvals[i]
-	diags=1./eigenvals
+        for i in nondegenerate:
+                diags[i]=1./eigenvals[i]
         D=np.diag(diags)
-	print diags
         tmp=dgemm(D.T,W)
 
         self.invE=dgemm(W.T,tmp.T) #W.dot(D.dot(W.T))
