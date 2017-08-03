@@ -14,8 +14,9 @@ import numpy as np
 import linop.linop as lp
 import blkop as blk
 import random as rd
-from scipy import weave
-from scipy.weave import inline
+#from scipy import weave
+import weave 
+from weave import inline
 import scipy.sparse.linalg as spla
 from utilities import *
 from multiprocessing import Pool,Queue,Process

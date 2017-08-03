@@ -10,8 +10,9 @@
 
 
 import numpy as np
-from scipy import weave
-from scipy.weave import inline
+#from scipy import weave
+import weave
+from weave import inline
 from  utilities_functions import *
 
 
