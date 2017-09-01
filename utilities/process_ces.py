@@ -131,7 +131,7 @@ class ProcessTimeSamples(object):
                 """
             inline(code,['pixs','w','counts','N'],verbose=1,
             extra_compile_args=['-march=native  -O3  -fopenmp ' ],
-        		    support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
+        		    support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz, compiler='gcc')
         else:
             self.cos=np.cos(2.*phi)
             self.sin=np.sin(2.*phi)
@@ -158,7 +158,7 @@ class ProcessTimeSamples(object):
                 """
                 inline(code,['pixs','w','cos','sin','cos2','sin2','sincos','N'],verbose=1,
                 extra_compile_args=['-march=native  -O3  -fopenmp ' ],
-                support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
+                support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz, compiler='gcc')
 
             elif self.pol==3:
                 self.counts=np.zeros(npix)
