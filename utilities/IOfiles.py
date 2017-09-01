@@ -110,32 +110,31 @@ def read_multiple_ces(filelist,pol, npairs=None,filtersubscan=True):
             tstart.append(outdata[8][1])
     hp_pixs.append(outdata[4])
     flagging_not_in_allCES(pixs)
-
     if filtersubscan:
         return np.concatenate(d),np.concatenate(weight),np.concatenate(polang),\
             np.concatenate(pixs),np.concatenate(hp_pixs),np.concatenate(ground),\
                     subscan,tstart,samples_per_bolopair,bolopairs_per_ces
     else:
         return np.concatenate(d),np.concatenate(weight),np.concatenate(polang),\
-            np.concatenate(pixs), np.concatenate(hp_pixs),np.concatenate(ground)
+            np.concatenate(pixs), np.concatenate(hp_pixs),np.concatenate(ground),\
+            samples_per_bolopair,bolopairs_per_ces
 
 def flagging_not_in_allCES(CES_pixs):
     """
     Flag all the pixels which are not in common in  the considered  CES.
     """
     nces=len(CES_pixs)
-    first,ices=len(CES_pixs[0]),0
-    for i in xrange(nces):
-        tmp=len(CES_pixs[i])
-        if tmp<first:
-                first,ices=tmp,i
-    #print "minimum at %d w/ %d"%(ices,first)
-    minimal_ces=set(CES_pixs[ices])
-    for i in range(nces):
-        to_flag=[x for x in CES_pixs[i] if x not in minimal_ces ]
-        CES_pixs[i][to_flag]=-1
-    pass
 
+    #compute intersection
+    inters=CES_pixs[0]
+    for pix in CES_pixs:
+        inters= np.intersect1d(inters, pix)
+
+    for pixs in CES_pixs:
+        to_flag=np.in1d(pixs, inters, invert=True  )
+        pixs[to_flag]= -1
+
+    pass
 
 
 
