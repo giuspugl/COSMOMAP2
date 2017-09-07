@@ -11,6 +11,7 @@
 import numpy as np
 import h5py as h5
 from  utilities_functions import *
+from functools import reduce
 #from memory_profiler import profile
 
 
@@ -372,3 +373,39 @@ def read_maplist(filename):
         m.append( np.array(f['Map'+str(i)][...]).T)
 
     return m,nmaps
+
+def full2cutskymap(hp_map,pol,npix,observpix):
+    """
+    Convert a map from full sky in the Healpix format into an array of concatenated maps.
+    Note that the ordering is the following (in the case of pol=3):
+    `I0,Q0,U0, I1,Q1,U1, ...`
+
+    - `hp_map`: {array or sequence }
+        a sequence of Mealpix maps, assumed ordering  [I, Q, U ]
+    """
+    x=np.zeros(pol*npix)
+    obsmap=[m[observpix] for m in hp_map]
+    if pol==1:
+		return obsmap
+    else:
+		for i in xrange(npix):
+		    x[pol*i:pol*(i+1)]=[obsmap[k][i] for k in range(pol)]
+		return x
+
+def find_common_obspix(nside,pathtofiles,n_files):
+
+    mask=0.
+    nside=nside
+    obspix_set=[]
+    for offset in range(n_files):
+        hp_pixs=read_obspix_from_hdf5(pathtofiles+"obspix_"+str(offset)+".hdf5")
+        obspix_set.append(hp_pixs)
+        print len(hp_pixs),"obspix",offset
+        mask+=(1+offset)*obspix2mask(hp_pixs,nside)
+        hp_pixs=0.
+    common_obsp=reduce(np.intersect1d, (obsp for obsp in obspix_set ))
+    print "intersection",len(common_obsp)
+    #mask=obspix2mask(common_obsp,nside)
+    #show_map(mask,1,'ra23',figname="mask.png",norm='log')
+    write_obspix_to_hdf5(pathtofiles+"common_obspix.hdf5",common_obsp)
+    pass

@@ -98,7 +98,7 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname=None):
         healpix_map=np.zeros(healpix_npix)
 
         healpix_map[obspix]=mapin
-        hp_list=healpix_map
+        hp_list=[healpix_map]
     if not fname is None:
         hp.write_map(fname,hp_list)
 
@@ -124,39 +124,18 @@ def show_map(outm,pol,patch,figname=None,title=''  ,**kwargs):
         gnomview arguments
     """
     coord_dict={'ra23':[-14.7,-33.09],'LP':[2.5,-53.5]}
+    runcase={1:'T',2:'QU',3:'TQU'}
+    keys=runcase[pol]
 
     if not 'rot' in kwargs:
         kwargs['rot']=coord_dict[patch]
 
-
-
-    if pol==1:
-        unseen=np.where(outm ==0)[0]
-        outm[unseen]=hp.UNSEEN
-        #plt.suptitle(title,fontsize=20)
-        hp.gnomview(outm,title=title+' T ',**kwargs)
-        #hp.graticule(dpar=5,dmer=5,local=True)
-    elif pol==2:
+    for k,i in zip(list(keys), xrange(pol)):
+        unseen=np.where(outm[i] ==0)[0]
+        outm[i][unseen]=hp.UNSEEN
+        nplots=100+pol*10+i+1
         plt.suptitle(title,fontsize=20)
-        unseen=np.where(outm[0]==0)[0]
-        outm[0][unseen]=hp.UNSEEN
-        hp.gnomview(outm[0],sub=121,title='Q ',**kwargs)
-        #hp.graticule(dpar=5,dmer=5,local=True)
-        outm[1][unseen]=hp.UNSEEN
-        hp.gnomview(outm[1],sub=122,title='U ',**kwargs)
-        #hp.graticule(dpar=5,dmer=5,local=True)
-    elif pol==3:
-        plt.suptitle(title,fontsize=20)
-        unseen=np.where(outm[1]==0)[0]
-        outm[0][unseen]=hp.UNSEEN
-        hp.gnomview(outm[0],title='T',sub=131,**kwargs)
-        #hp.graticule(dpar=5,dmer=5,local=True)
-        outm[1][unseen]=hp.UNSEEN
-        hp.gnomview(outm[1],title='Q ',sub=132,**kwargs)
-        #hp.graticule(dpar=5,dmer=5,local=True)
-        outm[2][unseen]=hp.UNSEEN
-        hp.gnomview(outm[2],title='U ',sub=133,**kwargs)
-        #hp.graticule(dpar=5,dmer=5,local=True)
+        hp.gnomview(outm[i],sub=nplots,title=k,**kwargs)
 
     if figname is None:
         plt.show()
