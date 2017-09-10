@@ -11,8 +11,8 @@
 import numpy as np
 import h5py as h5
 from  utilities_functions import *
+from  healpy_functions import *
 from functools import reduce
-#from memory_profiler import profile
 
 
 def read_from_data(filename,pol,npairs=None):
@@ -110,7 +110,7 @@ def read_multiple_ces(filelist,pol, npairs=None,filtersubscan=True):
             subscan.append(outdata[8][0])
             tstart.append(outdata[8][1])
     hp_pixs.append(outdata[4])
-    flagging_not_in_allCES(pixs)
+    #flagging_not_in_allCES(pixs)
     if filtersubscan:
         return np.concatenate(d),np.concatenate(weight),np.concatenate(polang),\
             np.concatenate(pixs),np.concatenate(hp_pixs),np.concatenate(ground),\
@@ -405,7 +405,5 @@ def find_common_obspix(nside,pathtofiles,n_files):
         hp_pixs=0.
     common_obsp=reduce(np.intersect1d, (obsp for obsp in obspix_set ))
     print "intersection",len(common_obsp)
-    #mask=obspix2mask(common_obsp,nside)
-    #show_map(mask,1,'ra23',figname="mask.png",norm='log')
     write_obspix_to_hdf5(pathtofiles+"common_obspix.hdf5",common_obsp)
-    pass
+    return obspix_set,mask

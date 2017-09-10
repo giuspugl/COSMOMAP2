@@ -779,39 +779,66 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
         where :math:`x` is   an :math:`n_{pix}` array.
         """
         y=x*0.
-
+        Npix=self.size/self.pol
+        includes=r"""
+            #include <stdio.h>
+            #include <ctype.h>
+            #include <stdlib.h>
+            #include <math.h>
+            """
         if self.pol==1:
             nan=np.ma.masked_greater(self.counts,0)
             y[nan.mask]=x[nan.mask]/self.counts[nan.mask]
-
         elif self.pol==3:
             determ=self.counts*(self.cos2*self.sin2 - self.sincos*self.sincos)\
                 - self.cos*self.cos*self.sin2 - self.sin*self.sin*self.cos2\
                 +2.*self.cos*self.sin*self.sincos
             nan=np.ma.masked_greater(abs(determ),1e-5)
-
-            for pix,det,s2,c2,cs,c,s,hits in zip(self.pixels,determ,self.sin2,self.cos2,self.sincos,\
-                                self.cos,self.sin,self.counts):
-                if not  nan.mask[pix]: continue
-
-                y[3*pix]  =((c2*s2-cs*cs)*x[3*pix]+ (s*cs-c*s2)  *x[3*pix+1]  +( c*cs-s*c2)  *x[3*pix+2])/det
-                y[3*pix+1]=((s*cs-c*s2)  *x[3*pix]+ (hits*s2-s*s)*x[3*pix+1]  +( s*c-hits*cs)*x[3*pix+2])/det
-                y[3*pix+2]=((c*cs -s*c2) *x[3*pix]+(-hits*cs+c*s)*x[3*pix+1]  +(hits*c2-c*c) *x[3*pix+2])/det
-
+            code="""
+            for (int j=0; j<Npix; j++){
+                if (mask(j)){
+                    y(3*j)  =((c2(j)*s2(j)-cs(j)*cs(j))*x(3*j)+ (s(j)*cs(j)-c(j)*s2(j))*x(3*j+1)    +( c(j)*cs(j)-s(j)*c2(j))*x(3*j+2))/det(j);
+                    y(3*j+1)=((s(j)*cs(j)-c(j)*s2(j))  *x(3*j)+ (hits(j)*s2(j)-s(j)*s(j))*x(3*j+1)  +( s(j)*c(j)-hits(j)*cs(j))*x(3*j+2))/det(j);
+                    y(3*j+2)=((c(j)*cs(j) -s(j)*c2(j)) *x(3*j)+(-hits(j)*cs(j)+c(j)*s(j))*x(3*j+1)  +(hits(j)*c2(j)-c(j)*c(j)) *x(3*j+2))/det(j);
+                }
+                else{
+                    continue;
+                }
+            }
+            """
+            mask=nan.mask
+            det=determ
+            c2=self.cos2
+            s2=self.sin2
+            cs=self.sincos
+            hits=self.counts
+            s=self.sin
+            c=self.cos
+            listarrays=['x','y','Npix','mask','c2','s2','cs', 's','c','det','hits']
+            inline(code,listarrays, extra_compile_args=['-march=native  -O3 ' ],verbose=1,
+        	                support_code = includes,type_converters=weave.converters.blitz)
         elif self.pol==2:
-
             determ=(self.cos2*self.sin2)-(self.sincos*self.sincos)
             nan=np.ma.masked_greater(abs(determ),1e-5)
-
-            for pix,s2,c2,cs,det in zip( self.pixels,self.sin2,self.cos2,self.sincos,determ):
-                tr=c2+s2
-                sqrt=np.sqrt(tr*tr/4. -det)
-                lambda_max=tr/2. + sqrt
-                lambda_min=tr/2. - sqrt
-                cond_num=np.abs(lambda_max/lambda_min)
-                if not nan.mask[pix]:  continue
-                y[pix*2]  =  ( s2  *x[2*pix] - cs *x[pix*2+1])/det
-                y[pix*2+1]=  (-cs  *x[2*pix] + c2 *x[pix*2+1])/det
+            code="""
+            for (int j=0; j<Npix; j++){
+                if (mask(j)){
+                    y(2*j)  = (s2(j)*x(2*j) -cs(j)* x(2*j +1) )/det(j);
+                    y(2*j+1)=(-cs(j)*x(2*j) +c2(j)* x(2*j+ 1) )/det(j);
+                }
+                else{
+                    continue;
+                }
+            }
+            """
+            mask=nan.mask
+            det=determ
+            c2=self.cos2
+            s2=self.sin2
+            cs=self.sincos
+            listarrays=['x','y','mask','Npix','c2','s2','cs','det']
+            inline(code,listarrays, extra_compile_args=['-march=native  -O3 ' ],verbose=1,
+        	                support_code = includes,type_converters=weave.converters.blitz)
         return y
 
     def __init__(self,CES,n,pol=1):

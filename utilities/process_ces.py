@@ -74,7 +74,8 @@ class ProcessTimeSamples(object):
         if obspix2 is None:
             self.threshold=threshold_cond
             self.initializeweights(phi,w)
-            self.repixelization()
+            self.new_repixelization()
+            #self.repixelization()
             self.flagging_samples()
         else:
             self.SetObspix(obspix2)
@@ -131,7 +132,7 @@ class ProcessTimeSamples(object):
                 """
             inline(code,['pixs','w','counts','N'],verbose=1,
             extra_compile_args=['-march=native  -O3  -fopenmp ' ],
-        		    support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz, compiler='gcc')
+        		    support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
         else:
             self.cos=np.cos(2.*phi)
             self.sin=np.sin(2.*phi)
@@ -158,7 +159,7 @@ class ProcessTimeSamples(object):
                 """
                 inline(code,['pixs','w','cos','sin','cos2','sin2','sincos','N'],verbose=1,
                 extra_compile_args=['-march=native  -O3  -fopenmp ' ],
-                support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz, compiler='gcc')
+                support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
 
             elif self.pol==3:
                 self.counts=np.zeros(npix)
@@ -187,6 +188,165 @@ class ProcessTimeSamples(object):
                 extra_compile_args=['-march=native  -O3  -fopenmp ' ],verbose=1,
                 support_code = includes,libraries=['gomp'],type_converters=weave.converters.blitz)
 
+
+    def new_repixelization(self):
+
+        includes=r"""
+            #include <stdio.h>
+            #include <ctype.h>
+            #include <stdlib.h>
+            #include <math.h>
+            """
+        code_I = """
+            int Nnew=0;
+            int Nrem=0;
+
+            int boolval;
+            for (int jpix=0; jpix<Nold; jpix++){
+            	boolval=0;
+            	for (int i = 0; i< Nm; ++i){
+            		if (mask(i)==jpix){
+               			boolval=1;
+            			break;
+               		}
+               		else{
+               			continue;
+               		}
+               	}
+               if (boolval==1) {
+               		old2new(jpix)=Nnew;
+               		counts(Nnew)= counts(jpix);
+               		obspix(Nnew)= obspix(jpix);
+               		Nnew++;
+               }
+               else{
+               		old2new(jpix)=-1;
+               		Nrem++;
+               }
+            }
+            newN(0)=Nnew;
+            newN(1)=Nrem;
+            """
+        code_QU = """
+            int Nnew=0;
+            int Nrem=0;
+
+            int boolval;
+            for (int jpix=0; jpix<Nold; jpix++){
+            	boolval=0;
+            	for (int i = 0; i< Nm; ++i){
+            		if (mask(i)==jpix){
+               			boolval=1;
+            			break;
+               		}
+               		else{
+               			continue;
+               		}
+               	}
+               if (boolval==1) {
+               		old2new(jpix)=Nnew;
+               		cos2(Nnew)= cos2(jpix);
+               		sin2(Nnew)= sin2(jpix);
+               		sincos(Nnew)= sincos(jpix);
+               		obspix(Nnew)= obspix(jpix);
+               		Nnew++;
+               }
+               else{
+               		old2new(jpix)=-1;
+               		Nrem++;
+               }
+            }
+            newN(0)=Nnew;
+            newN(1)=Nrem;
+            """
+        code_IQU = """
+            int Nnew=0;
+            int Nrem=0;
+
+            int boolval;
+            for (int jpix=0; jpix<Nold; jpix++){
+            	boolval=0;
+            	for (int i = 0; i< Nm; ++i){
+            		if (mask(i)==jpix){
+               			boolval=1;
+            			break;
+               		}
+               		else{
+               			continue;
+               		}
+               	}
+               if (boolval==1) {
+               		old2new(jpix)=Nnew;
+                    cos2(Nnew)= cos2(jpix);
+               		sin2(Nnew)= sin2(jpix);
+               		sincos(Nnew)= sincos(jpix);
+               		cosine(Nnew)= cosine(jpix);
+               		sine(Nnew)= sine(jpix);
+               		counts(Nnew)= counts(jpix);
+               		obspix(Nnew)= obspix(jpix);
+               		Nnew++;
+               }
+               else{
+               		old2new(jpix)=-1;
+               		Nrem++;
+               }
+            }
+            newN(0)=Nnew;
+            newN(1)=Nrem;
+            """
+        Nold=self.oldnpix
+        newN=np.zeros(2)
+        old2new=np.zeros(Nold,dtype=int)
+        mask=self.mask
+        obspix=self.obspix
+        Nm =len(mask)
+        if self.pol==1:
+            counts=self.counts
+            listarrays=['obspix', 'mask', 'Nold','old2new','newN','Nm','counts']
+            inline(code_I,listarrays, extra_compile_args=['-march=native  -O3 ' ],verbose=1,
+        	                support_code = includes,type_converters=weave.converters.blitz)
+            n_new_pix,n_removed_pix=int(newN[0]),int(newN[1])
+            #resize arrays
+            self.counts = np.delete(self.counts ,xrange(n_new_pix,self.oldnpix))
+        elif self.pol==2:
+            cos2=self.cos2
+            sin2=self.sin2
+            sincos=self.sincos
+            listarrays=['obspix', 'mask', 'Nold','old2new','newN','Nm','cos2','sin2','sincos']
+            inline(code_QU,listarrays, extra_compile_args=['-march=native  -O3 ' ],verbose=1,
+        	                support_code = includes,type_converters=weave.converters.blitz)
+            n_new_pix,n_removed_pix=int(newN[0]),int(newN[1])
+            #resize arrays
+            self.cos2 = np.delete(self.cos2 ,xrange(n_new_pix,self.oldnpix))
+            self.sin2 = np.delete(self.sin2 ,xrange(n_new_pix,self.oldnpix))
+            self.sincos = np.delete(self.sincos ,xrange(n_new_pix,self.oldnpix))
+        elif self.pol==3:
+            cos2=self.cos2
+            sin2=self.sin2
+            sincos=self.sincos
+            cosine=self.cosine
+            sine=self.sine
+            counts=self.counts
+            listarrays=['obspix', 'mask', 'Nold','old2new','newN','Nm','cos2','sin2','sincos','sine', 'cosine','counts']
+            inline(code_IQU,listarrays, extra_compile_args=['-march=native  -O3 ' ],verbose=1,
+        	                support_code = includes,type_converters=weave.converters.blitz)
+            n_new_pix,n_removed_pix=int(newN[0]),int(newN[1])
+            #resize arrays
+            self.cos2 = np.delete(self.cos2 ,xrange(n_new_pix,self.oldnpix))
+            self.sin2 = np.delete(self.sin2 ,xrange(n_new_pix,self.oldnpix))
+            self.sincos = np.delete(self.sincos ,xrange(n_new_pix,self.oldnpix))
+            self.sine = np.delete(self.sine ,xrange(n_new_pix,self.oldnpix))
+            self.cosine = np.delete(self.cosine ,xrange(n_new_pix,self.oldnpix))
+            self.counts = np.delete(self.counts ,xrange(n_new_pix,self.oldnpix))
+
+        print self.bashc.header("___"*30)
+        print self.bashc.blue("Found %d pathological pixels\nRepixelizing  w/ %d pixels."%(n_removed_pix,n_new_pix))
+        print self.bashc.header("___"*30)
+        #resizing all the arrays
+        self.obspix=np.delete(self.obspix,xrange(n_new_pix,self.oldnpix))
+        self.old2new=old2new
+        self.__new_npix=n_new_pix
+        print self.bashc.bold("NT=%d\tNPIX=%d"%(self.nsamples,self.__new_npix))
 
     def repixelization(self):
         """
