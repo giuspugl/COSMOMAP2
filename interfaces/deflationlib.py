@@ -192,29 +192,16 @@ def run_krypy_arnoldi(A,x0,M, tol, maxiter=None):
         nmax=maxiter
     x0=x0.reshape((N,1))
     Aop=spla.aslinearoperator(A)
-    prec=spla.aslinearoperator(M)
-
-    arnoldi = kp.utils.Arnoldi(Aop, x0,M=prec, maxiter=nmax, ortho='mgs')
-    for m in xrange(nmax):
-
-        arnoldi.advance()
-        v,h,p=arnoldi.get()
-        resid = abs(h[m+1,m]*v[m,m+1])
-        if resid<=tol:
-            break
-    if m+1==nmax:
-        print "Convergence not achieved within the Arnoldi algorithm after %d iterations, r^(k)= %g"%(m,resid )
+    if M is not None:
+	    prec=spla.aslinearoperator(M)
+ 	    v,h,p = kp.utils.arnoldi(Aop, x0,M=prec, maxiter=nmax )
     else:
-        print "--"*30
-        print "%g accuracy reached with %d Arnoldi iterations"%(tol,m)
-        print "--"*30
-
-
-    #orthonormalize the Arnoldi basis
-    #Q,R=kp.utils.qr(p)
+	    v,h = kp.utils.arnoldi(Aop, x0, maxiter=nmax )
+    m=v.shape[1]
+    print "Residual after  %d Arnoldi iterations, r^(k)= %g \nExiting Arnoldi ..."%(m,norm2(v[:,-1]) )
     return v,h,m
 
-def find_ritz_eigenvalues(h,v,threshold=1.e-2,eigenvalues=False):
+def find_ritz_eigenvalues(h,v,threshold=1.e-2,eigenvalues=False,filename=None):
     eig,u,resnorm,z=kp.utils.ritz(h,V=v,hermitian=True )
     #orthonormalize eigenvectors
     #Q,R=kp.utils.qr(z)
@@ -224,6 +211,8 @@ def find_ritz_eigenvalues(h,v,threshold=1.e-2,eigenvalues=False):
     print "Found   %d Ritz eigenvalues smaller than %.1g "%(r,threshold)
     print eig[:r]
     print "//"*30
+    if not filename is None:
+	write_ritz_eigenvectors_to_hdf5(z,filename, eigvals=eig)
     if eigenvalues:
 	return z[:,selected.mask],r,eig[selected.mask]
     else:

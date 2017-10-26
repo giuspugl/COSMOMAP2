@@ -821,7 +821,13 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
             determ=(self.cos2*self.sin2)-(self.sincos*self.sincos)
             nan=np.ma.masked_greater(abs(determ),1e-5)
             code="""
+	    //double tr,sqroot;
             for (int j=0; j<Npix; j++){
+		/*tr=c2(j) + s2(j);
+		sqroot= sqrt(tr * tr /4.  -det(j));
+		lambdas(2*j)= tr/2. -sqroot;
+		lambdas(2*j+1) = tr/2. +sqroot ;
+		*/
                 if (mask(j)){
                     y(2*j)  = (s2(j)*x(2*j) -cs(j)* x(2*j +1) )/det(j);
                     y(2*j+1)=(-cs(j)*x(2*j) +c2(j)* x(2*j+ 1) )/det(j);
@@ -836,9 +842,12 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
             c2=self.cos2
             s2=self.sin2
             cs=self.sincos
+	    #lambdas=y*0.
             listarrays=['x','y','mask','Npix','c2','s2','cs','det']
             inline(code,listarrays, extra_compile_args=['-march=native  -O3 ' ],verbose=1,
         	                support_code = includes,type_converters=weave.converters.blitz)
+
+	    #print np.sum(lambdas)/np.sqrt(self.size**2)
         return y
 
     def __init__(self,CES,n,pol=1):

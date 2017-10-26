@@ -77,8 +77,8 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname=None):
 
     if pol==3:
         healpix_map=np.zeros(healpix_npix*pol).reshape((healpix_npix,pol))
-        i=mapin[np.arange(0,npix*3,3)]
-        q,u=mapin[np.arange(1,npix*3,3)],mapin[np.arange(2,npix*3,3)]
+        i=mapin[::3]
+        q,u=mapin[1::3],mapin[2::3]
 
         m=np.where(q!=0.)[0]
         healpix_map[obspix,0]=i
@@ -88,7 +88,7 @@ def reorganize_map(mapin,obspix,npix,nside,pol,fname=None):
     if pol==2:
         healpix_map=np.zeros(healpix_npix*pol).reshape((healpix_npix,pol))
 
-        q,u=mapin[np.arange(0,npix*pol,2)],mapin[np.arange(1,npix*pol,pol)]
+        q,u=mapin[::2],mapin[1::2]
 
         healpix_map[obspix,0]=q
         healpix_map[obspix,1]=u
