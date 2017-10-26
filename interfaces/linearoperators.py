@@ -611,7 +611,7 @@ class WeightingLO(lp.LinearOperator ):
                 istart  = idx[0] *ns + offset
                 iend    = (idx[0] +1 )*ns  + offset
                 d[ istart :iend]    =  w * d[ istart  :  iend ]
-            offset=b*ns
+            offset+=b*ns
             oldb+=b
 
         return d
@@ -619,8 +619,9 @@ class WeightingLO(lp.LinearOperator ):
     def __init__(self,bolos_per_ces, samples_per_bolopair, weights):
         self.ndet_pairs=bolos_per_ces
         self.nsample_per_pair= samples_per_bolopair
+        self.size=np.sum([i*j for i, j in  zip(samples_per_bolopair,bolos_per_ces) ])
         self.weights=weights
-        super(WeightingLO, self).__init__(nargin=sum(self.blocksize),nargout=sum(self.blocksize),
+        super(WeightingLO, self).__init__(nargin=self.size,nargout=self.size,
                                             matvec=self.mult, symmetric=True)
 
 class BlockLO(blk.BlockDiagonalLinearOperator):
@@ -834,7 +835,7 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
             c2=self.cos2
             s2=self.sin2
             cs=self.sincos
-	        listarrays=['x','y','mask','Npix','c2','s2','cs','det']
+            listarrays=['x','y','mask','Npix','c2','s2','cs','det']
             inline(code,listarrays, extra_compile_args=['-march=native  -O3 ' ],verbose=1,
         	                support_code = includes,type_converters=weave.converters.blitz)
         return y
