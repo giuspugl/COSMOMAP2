@@ -601,11 +601,33 @@ class ToeplitzLO(lp.LinearOperator):
                                                 symmetric=True )
         self.array=a
 
+class WeightingLO(lp.LinearOperator ):
+
+    def mult(self,d):
+        offset=0
+        oldb=0
+        for b , ns in zip (self.ndet_pairs, self.nsample_per_pair):
+            for idx, w in np.ndenumerate(self.weights[oldb:b + oldb]):
+                istart  = idx[0] *ns + offset
+                iend    = (idx[0] +1 )*ns  + offset
+                d[ istart :iend]    =  w * d[ istart  :  iend ]
+            offset=b*ns
+            oldb+=b
+
+        return d
+
+    def __init__(self,bolos_per_ces, samples_per_bolopair, weights):
+        self.ndet_pairs=bolos_per_ces
+        self.nsample_per_pair= samples_per_bolopair
+        self.weights=weights
+        super(WeightingLO, self).__init__(nargin=sum(self.blocksize),nargout=sum(self.blocksize),
+                                            matvec=self.mult, symmetric=True)
+
 class BlockLO(blk.BlockDiagonalLinearOperator):
     """
     Derived class from  :mod:`blkop.BlockDiagonalLinearOperator`.
     It basically relies on the definition of a block diagonal operator,
-    composed by ``nblocks`` diagonal operators.
+    composed by ``nblocks``  diagonal operators with equal size .
     If it does not have any  off-diagonal terms (*default case* ), each block is a multiple  of
     the identity characterized by the  values listed in ``t`` and therefore is
     initialized by the :func:`BlockLO.build_blocks` as a :class:`linop.DiagonalOperator`.
@@ -628,6 +650,7 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
                     each block is identified by a scalar value in the diagonal.
 
     """
+
     def build_blocks(self):
         """
         Build each block of the operator either with or
@@ -658,37 +681,12 @@ class BlockLO(blk.BlockDiagonalLinearOperator):
                 d=np.empty(self.blocksize)
         self.diag=np.concatenate(tmplist)
 
-    def build_unbalanced_blocks(self):
-        """
-        Build the  list of Diagonal blocks of :class:`blk.BlockDiagonalLinearOperator`
-        by assuming that the blocks have different size. Of course it is required that:
-
-        .. math::
-            \sum _{i=1} ^{nblocks} size(block_i) = N_t
-
-        """
-        self.blocklist=[]
-        tmplist=[]
-        for size,weight in zip(self.blocksize,self.covnoise):
-            d=np.ones(size)
-            d.fill(weight)
-            self.blocklist.append(lp.DiagonalOperator(d))
-            tmplist.append(d)
-            d=np.empty(size)
-        self.diag=np.concatenate(tmplist)
-
-
     def __init__(self,blocksize,t,offdiag=False):
         self.__isoffdiag = offdiag
         self.blocksize=blocksize
         self.covnoise=t
-        if type(blocksize) is list:
-            self.build_unbalanced_blocks()
-        else:
-            self.build_blocks()
-
+        self.build_blocks()
         super(BlockLO, self).__init__(self.blocklist)
-
     @property
     def isoffdiag(self):
         """
@@ -821,13 +819,7 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
             determ=(self.cos2*self.sin2)-(self.sincos*self.sincos)
             nan=np.ma.masked_greater(abs(determ),1e-5)
             code="""
-	    //double tr,sqroot;
-            for (int j=0; j<Npix; j++){
-		/*tr=c2(j) + s2(j);
-		sqroot= sqrt(tr * tr /4.  -det(j));
-		lambdas(2*j)= tr/2. -sqroot;
-		lambdas(2*j+1) = tr/2. +sqroot ;
-		*/
+	        for (int j=0; j<Npix; j++){
                 if (mask(j)){
                     y(2*j)  = (s2(j)*x(2*j) -cs(j)* x(2*j +1) )/det(j);
                     y(2*j+1)=(-cs(j)*x(2*j) +c2(j)* x(2*j+ 1) )/det(j);
@@ -842,12 +834,9 @@ class BlockDiagonalPreconditionerLO(lp.LinearOperator):
             c2=self.cos2
             s2=self.sin2
             cs=self.sincos
-	    #lambdas=y*0.
-            listarrays=['x','y','mask','Npix','c2','s2','cs','det']
+	        listarrays=['x','y','mask','Npix','c2','s2','cs','det']
             inline(code,listarrays, extra_compile_args=['-march=native  -O3 ' ],verbose=1,
         	                support_code = includes,type_converters=weave.converters.blitz)
-
-	    #print np.sum(lambdas)/np.sqrt(self.size**2)
         return y
 
     def __init__(self,CES,n,pol=1):
